@@ -1,0 +1,23 @@
+[
+  {
+    "id": "root",
+    "type": "NIN.RootNode",
+    "connected": {
+      "screen": "main.render"
+    }
+  },
+  {
+    "id": "main",
+    "type": "mainNode",
+    "options": {
+      "shader": "main"
+    }
+  },
+  {
+    "id": "testingnode",
+    "type": "testingnodeNode",
+    "options": {
+      "shader": "testingnode"
+    }
+  }
+]

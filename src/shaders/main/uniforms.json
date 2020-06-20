@@ -1,0 +1,6 @@
+{
+    "iChannel0": { "type": "t", "value": null },
+    "frame": { "type": "f", "value": 0.0 },
+    "resolutionX": { "type": "f", "value": 1280},
+    "resolutionY": { "type": "f", "value": 720}
+}

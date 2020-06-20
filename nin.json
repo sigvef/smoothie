@@ -1,0 +1,62 @@
+{
+  "title": "My project",
+  "authors": [
+    "Your demoscene handle"
+  ],
+  "description": "This is my project",
+  "previewImage": "https://raw.githubusercontent.com/ninjadev/nin/master/nin/frontend/app/images/nin-dark.png",
+  "aspectRatio": "16:9",
+  "music": {
+    "path": "res/music.mp3",
+    "bpm": 190,
+    "subdivision": 12,
+    "BEANOffset": 0
+  },
+  "googleAnalyticsID": "Your GA ID",
+  "labels": [
+    {
+      "name": "pre",
+      "BEAN": 0
+    },
+    {
+      "name": "Start",
+      "BEAN": 192
+    },
+    {
+      "name": "kiwi",
+      "BEAN": 576
+    },
+    {
+      "name": "peach",
+      "BEAN": 960
+    },
+    {
+      "name": "grapes",
+      "BEAN": 1344
+    },
+    {
+      "name": "raspberry",
+      "BEAN": 1728
+    },
+    {
+      "name": "strawberry",
+      "BEAN": 2112
+    },
+    {
+      "name": "mandarin",
+      "BEAN": 2496
+    },
+    {
+      "name": "banana",
+      "BEAN": 2880
+    },
+    {
+      "name": "blender",
+      "BEAN": 3264
+    },
+    {
+      "name": "outro",
+      "BEAN": 4800
+    }
+  ]
+}
