@@ -13,14 +13,14 @@ uniform float resolutionY;
 
 /* dev flags to disable parts of the shader during development for faster
  * compile times */
-#define SKIP_KIWI
-#define SKIP_GRAPE
+//#define SKIP_KIWI
+//#define SKIP_GRAPE
 //#define SKIP_MANDARIN
-#define SKIP_STRAWBERRY
-#define SKIP_RASPBERRY
-#define SKIP_BLENDER
-#define SKIP_BANANA
-#define SKIP_PEACH
+//#define SKIP_STRAWBERRY
+//#define SKIP_RASPBERRY
+//#define SKIP_BLENDER
+//#define SKIP_BANANA
+//#define SKIP_PEACH
 
 #define M_BG 0.
 
@@ -576,7 +576,7 @@ float sdMandarinPeel(vec3 p, float amount) {
     p = opTwist(p, PI * 2.);
 
     float d = sdSphere(p, 1.);
-    d = max(d, - sdSphere(p, 0.95));
+    d = max(d, - sdSphere(p, 0.9));
     d = opSmoothSubtraction(sdBox(p + vec3(0.,1.0 + 2. * (1. - amount),0.), vec3(2.)), d, .1);
 
     d *= 0.25;
@@ -733,7 +733,7 @@ Hit mapRaspberry(vec3 p) {
 
     vec3 bg = vec3(92., 17., 52.) / 255. * 1.5 + 0.3;
     vec3 bg2 = vec3(92., 17., 52.) / 255. * 1.1;
-    vec3 bg3 = vec3(110., 85., 55.) / 255. * 1.1;
+    vec3 bg3 = vec3(207., 249., 122.) / 255. * 1.05 * 0.2;
     bg = mix(bg, bg3, ender);
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 7.), vec3(10., mix(1.5, 2.5, ender), 1.)), 0., xxp, xxp, translate(vec3(0.)), bg, 1., 0., 0., M_BG));
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
@@ -811,8 +811,8 @@ Hit mapStrawberry(vec3 p) {
     d = opSmoothSubtraction(sdBox(p + vec3(0., -2.7, 0.), vec3(2.)), d, 0.05);
 
     vec2 idhash = fract(hash(vec2(id + 223., id + 131.123)));
-    vec3 boxp = opTx(p, rotateZ(2. * PI * idhash.x * 1231.1));
-    boxp = opTx(boxp, rotateY(2. * PI * idhash.y));
+    vec3 boxp = opTx(p, rotateZ(0.5 * sin(idhash.x * 1571.1)));
+    //boxp = opTx(boxp, rotateY(2. * PI * idhash.y));
     boxp += vec3(1.5, 0., 0.);
     d = opSmoothSubtraction(sdBox(boxp, vec3(1.5)), d, 0.05);
 
@@ -824,7 +824,7 @@ Hit mapStrawberry(vec3 p) {
 
     float starter = smosh(3334., frame, 3353. - 3334.) * 1.1 - 0.1;
     vec3 bg = vec3(207., 249., 122.) / 255. * 1.05;
-    vec3 bg2 = vec3(110., 85., 55.) / 255. * 1.1;
+    vec3 bg2 = bg * 0.2;
     vec3 bg3 = vec3(223., 245., 191.) / 255.;
     bg = mix(bg, bg3, ender);
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 7.), vec3(1.9 * starter + 2.2 * ender, 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg, 1., 0., 0., M_BG));
@@ -843,13 +843,13 @@ Hit mapMandarin(vec3 p, float isShadowMap) {
     vec3 xxp = p;
     float t = mod(frame * 190./ 60. / 60.  /4. / 4. * 2., 1.);
 
-    float scale = 2.;
+    float scale = 2.3;
 
     p *= scale;
 
     p += vec3(0., 1., 0.);
-    p += vec3(0., -5., 0.) * (1. - smosh(0., t, 0.02));
-    nnp += vec3(0., -5., 0.) * (1. - smosh(0., t, 0.02)) / scale;
+    p += vec3(0., -5., 0.) * (1. - smosh(0., t, 0.1));
+    nnp += vec3(0., -5., 0.) * (1. - smosh(0., t, 0.1)) / scale;
 
     vec3 np = p;
 
@@ -862,7 +862,7 @@ Hit mapMandarin(vec3 p, float isShadowMap) {
 
     Hit result = Hit(sdSphere(p, 0.), 0., p, p, transform, vec3(1.), 0., 0., 0., M_MANDARIN);
 
-    float danceAngleAmount = smosh(0.375, t, 0.125); 
+    float danceAngleAmount = smosh(0.25, t, 0.25); 
 
     float fallAmount = smosh(0.75, t, 0.5);
 
@@ -884,7 +884,7 @@ Hit mapMandarin(vec3 p, float isShadowMap) {
     result.distance /= scale;
 
     if(mandarinPeelAmount < 0.999 && isShadowMap < 0.5) {
-        float scale = 1.22;
+        float scale = 1.42 - (mandarinPeelAmount * .333);
         nnp *= scale;
         mat4 peelT = rotateY(-t);
         nnp = opTx(nnp, peelT);
@@ -912,7 +912,7 @@ Hit mapMandarin(vec3 p, float isShadowMap) {
 #ifndef SKIP_PEACH
 Hit mapPeach(vec3 p) {
 
-    float scale = 1.2;
+    float scale = 1.25;
     p *= scale;
 
     vec3 xxp = p;
@@ -1071,9 +1071,23 @@ Hit mapBanana(vec3 p) {
 }
 #endif
 
+Hit mapGrapeHalf(vec3 p, mat4 transform, float cutRotation, float amount) {
+    float d = sdSphere(p, 1.); 
+    vec3 cutp = p;
+    //vec3 cutp = opTx(p, rotateY(cutRotation));
+    Hit result = Hit(d, 0., p, p, transform, vec3(1.), 1., 0., 0., M_GRAPE);
+
+    p += vec3(0., 0., 1.);
+    vec3 topP = opTx(p, rotateX(PI / 2.));
+    float r = (0.5 + (1. + floor(1.2 + p.z * 4.)) * 0.1) * 0.1;
+    result = smadd(result, Hit(sdRoundedCylinder(topP, r, .05, .15), 0., p, p, transform, vec3(157., 148., 81.) / 255., 1., 0., .5, M_BG), 0.1);
+
+    result.distance = opSmoothSubtraction(sdBox(cutp - vec3(2.02, 0., 0.), amount * vec3(2.)), result.distance, 0.03);
+    return result;
+}
+
 #ifndef SKIP_GRAPE
 Hit mapGrape(vec3 p) {
-    float rotation = frame * 0.05;
     vec3 np = p;
     vec3 xxp = np;
 
@@ -1083,45 +1097,39 @@ Hit mapGrape(vec3 p) {
     p /= scale;
 
     float t = mod(frame * 190. / 60. / 60. / 4. / 2., 1.);
+    float rotation = t * 10.;
 
     float offset = floor(p.x / 3. + 0.5)  + 1.;
 
     float dropT1 = smosh(0.25 * offset + 0.1, t, 0.15);
-    float offT = smosh(.84 + offset * 0.02, t, 0.1);
+    float offT = smosh(.82 + offset * 0.02, t, 0.15);
 
     float cutT = smosh(0.25 * offset + 0.215, t, 0.15);
 
     p.y += mix(-5., 0., dropT1);
     p.y += mix(0., 5.1, offT);
+    
 
     p = opRepLim(p, 3., vec3(1., 0., 0.));
 
     rotation += offset;
 
+    vec3 dropP = p;
+    dropP.y += cutT * 8.;
+
     mat4 transform = translate(vec3(0.));
     transform *= rotateY(rotation);
     transform *= rotateX(-1.2);
     p = opTx(p, transform);
-
-
+    dropP = opTx(dropP, transform);
 
     p.z *= 0.9;
+    dropP.z *= 0.9;
 
-    float angle = atan(p.y, p.x);
-    float d = sdSphere(p, 1.);
+    float cutRotation = t * 10. + offset * 4.;
+    Hit result = mapGrapeHalf(p, transform, cutRotation, cutT);
 
-    vec3 cutp = opTx(p, rotateY(0.1 * sin(offset)));
-    cutp = opTx(p, rotateX(offset));
-
-    Hit result = Hit(d, 0., np, p, transform, vec3(1.), 1., 0., 0., M_GRAPE);
-
-    p += vec3(0., 0., 1.);
-    vec3 topP = opTx(p, rotateX(PI / 2.));
-    float r = (0.5 + (1. + floor(1.2 + p.z * 4.)) * 0.1) * 0.1;
-    result = smadd(result, Hit(sdRoundedCylinder(topP, r, .05, .15), 0., np, p, transform, vec3(157., 148., 81.) / 255., 1., 0., .5, M_BG), 0.1);
-
-
-    result.distance = opSmoothSubtraction(sdBox(cutp - vec3(2. + 0.1 * sin(offset), 0., 0.), cutT * vec3(2.)), result.distance, 0.03);
+    //result = add(result, mapGrapeHalf(dropP, transform, cutRotation, -1.));
 
     result.distance *= scale;
 
