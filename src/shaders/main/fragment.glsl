@@ -39,6 +39,8 @@ uniform float resolutionY;
 
 #define CHECK_MATERIAL(x, material) (((x) > (material - .5)) && ((x) < (material + .5)))
 
+#define Z(x) (clamp((x), 0., 1.))
+
 
  vec3 opTwist(vec3 p, float k)
 {
@@ -171,7 +173,7 @@ float sdSphere( vec3 p, float s ) {
 }
 
 float smosh(float edge, float x, float len) {
-    return clamp(0., 1., smoothstep(0., 1., (x - edge) / len));   
+    return Z(smoothstep(0., 1., (x - edge) / len));   
 }
 vec2 hash( vec2 p ) { p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))); return fract(sin(p)*18.5453); }
 
@@ -180,7 +182,7 @@ vec3 hash3( vec3 p ) { return vec3(hash(p.yz), hash(vec2(p.x + 1000., 0.)).x); }
 
 vec3 skybox(vec3 p) {
     float angle = atan(p.z, p.x) + PI / 3.;
-    float amount = clamp(mix(0., 1., smosh(-1., p.y + 0.3 * sin(angle), 2.)), 0., 1.);
+    float amount = Z(mix(0., 1., smosh(-1., p.y + 0.3 * sin(angle), 2.)));
     vec3 color = mix(vec3(33., 25., 3.) / 255., vec3(92., 54., 6.) / 255., smosh(0., amount, 1. / 3.));
     color = mix(color, vec3(182., 215., 224.) / 255., smosh(1. / 3., amount, 1. / 3.));
     color = mix(color, vec3(1.), smosh(2. / 3., amount, 1. / 3.));
@@ -309,7 +311,7 @@ float sdRoundCone( vec3 p, float r1, float r2, float h )
 
 
 vec3 fancyLighting(Hit hit, vec3 lightDirection, vec3 normal, vec3 rayDirection, float shadow) {
-    float angle = clamp(dot(normal, lightDirection), 0., 1.);
+    float angle = Z(dot(normal, lightDirection));
 
     float specular = cookTorranceSpecular(
             normalize(lightDirection), 
@@ -320,7 +322,7 @@ vec3 fancyLighting(Hit hit, vec3 lightDirection, vec3 normal, vec3 rayDirection,
 
     float lighting = angle;
     lighting *= shadow;
-    lighting = clamp(lighting, 0., 1.);
+    lighting = Z(lighting);
 
     vec3 diffuse = hit.albedo * lighting;
 
@@ -634,7 +636,7 @@ Hit mapBlender(vec3 p) {
     r = mix(1., r, smoothstep(0., 1., smosh(0.1, h, 0.2)));
     r = mix(1.15, r, smoothstep(0., 1., smosh(0.1, h, 0.01)));
     r = mix(0., r, smoothstep(0., 1., smosh(0., h, 0.1)));
-    r = mix(0., r, clamp(0., 1., smosh(0.025, h, 0.01)));
+    r = mix(0., r, Z(smosh(0.025, h, 0.01)));
 
 
     r *= 0.3;
@@ -789,7 +791,7 @@ Hit mapStrawberry(vec3 p) {
 
     r += 0.012 * dimpler;
 
-    float seeds = pow(clamp(max(-dimpler, 0.) - 0.85, 0., 1.), 0.5) * 2.;
+    float seeds = pow(Z(max(-dimpler, 0.) - 0.85), 0.5) * 2.;
 
     r += 0.02 * seeds;
 
@@ -970,7 +972,7 @@ Hit mapPeach(vec3 p) {
     result = smadd(result, Hit(d2, 0., stoneP, stoneP, transform, vec3(1.), 0., 0., 0., M_PEACH_SEED), 0.05);
 
     vec3 bg = vec3(103., 202., 230.) / 255. * 0.5;
-    bg = clamp(bg * 1.1 + 0.3, 0., 1.);
+    bg = Z(bg * 1.1 + 0.3);
     vec3 bg2 = vec3(103., 202., 230.)/ 255. * 0.5 * 1.1;
 
     float starter = smosh(1515., frame, 1534. - 1515.) * 1.1 - 0.1;
@@ -1065,7 +1067,7 @@ Hit mapBanana(vec3 p) {
     Hit result = Hit( d, 0., p, uv, transform, vec3(1.), 0., 0., 0., M_BANANA);
     vec3 bg = vec3(103., 202., 230.) / 255. * 0.5;
     vec3 xxpr = opTx(xxp, rotateZ(mix(0., -PI / 16., elongateT)));
-    result = add(result, Hit(sdBox(xxpr - vec3(0., -10. * leaveT, 7.), vec3(10., -1. + (2.8 + 0.1 * xxp.x) * (elongateT), 1.)), 0., xxpr, xxpr, translate(vec3(0.)), clamp(bg * 1.1 + 0.3, 0., 1.), 1., 0., 0., M_BG));
+    result = add(result, Hit(sdBox(xxpr - vec3(0., -10. * leaveT, 7.), vec3(10., -1. + (2.8 + 0.1 * xxp.x) * (elongateT), 1.)), 0., xxpr, xxpr, translate(vec3(0.)), Z(bg * 1.1 + 0.3), 1., 0., 0., M_BG));
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg * 1.1, 1., 0., 0., M_BG));
     return result;
 }
@@ -1399,7 +1401,7 @@ vec4 kiwiTexture(vec3 uv) {
     float normalizedLen = length(uv.xy);
 
 
-    vec3 color = mix(innerGreen, outerGreen, pow(clamp(0., 1., (normalizedLen - whiteLimit * lenScale) / (1. - whiteLimit * lenScale)), 3.));
+    vec3 color = mix(innerGreen, outerGreen, pow(Z((normalizedLen - whiteLimit * lenScale) / (1. - whiteLimit * lenScale)), 3.));
 
     color = mix(color, darkTapGreen, 0.8 * max(step(len, whiteLimit), smosh(len - whiteLimit + 0.4, abs(sin(angle * taps)), .5 )));
 
@@ -1418,7 +1420,7 @@ vec4 kiwiTexture(vec3 uv) {
 
 
     float seedAmount = pow(
-            clamp(0., 1., 2. * (1. - smosh(0.3, len, 0.2)) * smosh(whiteLimit, len , .05) * abs(sin(angle * taps)) * abs(cos(sin(angle * 5.) + sin(angle * 3.) + sin(angle * 7.) + sin(angle * 11.) + pow(len, .5) *20.)) * .5),
+            Z(2. * (1. - smosh(0.3, len, 0.2)) * smosh(whiteLimit, len , .05) * abs(sin(angle * taps)) * abs(cos(sin(angle * 5.) + sin(angle * 3.) + sin(angle * 7.) + sin(angle * 11.) + pow(len, .5) *20.)) * .5),
             4.);
 
     color = mix(color, vec3(0.), seedAmount);
@@ -1443,7 +1445,7 @@ MaterialProperties mandarinPeelTexture(vec3 uv) {
     float bump = 0.5;
     float micro = snoise(uv * 32.) * snoise(uv * 2.);
     float roughness = 0.2 +0.3 * micro;
-    float dimples = pow(clamp( 3. * ((1. - res.x) - .6), 0., 1.), 4.);
+    float dimples = pow(Z( 3. * ((1. - res.x) - .6)), 4.);
 
     bump = 1. -dimples * 0.5 + micro * 0.05;
 
@@ -1473,8 +1475,8 @@ MaterialProperties peachTexture(vec3 uv) {
     vec3 color2 = vec3(242., 63., 69.) / 255.;
     vec3 color3 = vec3(172., 26., 71.) / 255.;
     float mixer = snoise(uv * .5);
-    vec3 color = mix(color1, color2, clamp(mixer * 2., 0., 1.));
-    color = mix(color, color3, clamp(mixer * 2. - 1., 0., 1.));
+    vec3 color = mix(color1, color2, Z(mixer * 2.));
+    color = mix(color, color3, Z(mixer * 2. - 1.));
     color = mix(color, vec3(1), 0.25 * (snoise(uv * 64.) + snoise(uv * .5)));
 
     float len = length(uv);
@@ -1526,7 +1528,7 @@ MaterialProperties bananaTexture(vec3 uv) {
     //insideMixer = smosh(0.25, insideMixer, 0.5);
     insideMixer = mix(insideMixer, insideMixer * res.x, 0.5);
     insideMixer = pow(insideMixer, 2.) * 2.;
-    insideMixer = clamp(insideMixer, 0., 1.);
+    insideMixer = Z(insideMixer);
     vec3 insideColor = mix(lightInside, darkInside, insideMixer);
 
     float skinMixer = smosh(1.5, len, 0.2);
@@ -1570,7 +1572,7 @@ MaterialProperties mandarinTexture(vec3 uv) {
         float bump = pow(1. - x, 2.);
         x = mix(x, pow(x, 0.5), smosh(1.35, len, 0.1));
         x = mix(x, pow(x, 0.1), 1. - smosh(0.01, abs(uv.z), 0.01));
-        x = clamp(x, 0., 1.);
+        x = Z(x);
         color = mix(color, vec3(1.), vec3(x) * 0.5);
         color = pow(color, vec3(1.2));
         return MaterialProperties(color, 0.05 + x * 0.5, bump);
@@ -1646,7 +1648,7 @@ MaterialProperties grapeTexture(vec3 uv) {
 
     amount *= 1. - smosh(0.9, len, 0.09);
 
-    float seeds = clamp(pow(max(amount * (1. - smosh(0.5, len , 0.1)) - 0.5, 0.), 4.) * 8.,  0., 1.);
+    float seeds = Z(pow(max(amount * (1. - smosh(0.5, len , 0.1)) - 0.5, 0.), 4.) * 8.);
 
     seeds *= max(0., sin(PI / 2. + angle * 4.) * sin(PI / 2. * 3. + angle * 2.));
     amount *= 0.5;
@@ -1978,9 +1980,9 @@ vec3 image(vec2 uv) {
         bubbleScale = 4.;
         fakeSSSAmount = 1.;
         MaterialProperties center = strawberryTexture(hit.uv);
-        hit.albedo = mix(hit.albedo, center.albedo, clamp(bubbleAmount, 0., 1.));
+        hit.albedo = mix(hit.albedo, center.albedo, Z(bubbleAmount));
         hit.roughness = center.roughness;
-        bump = mix(0.5, center.bump, clamp(bubbleAmount, 0., 1.));
+        bump = mix(0.5, center.bump, Z(bubbleAmount));
         bumpNormal = -vec3(
                 strawberryTexture(hit.uv + eX).bump - strawberryTexture(hit.uv - eX).bump,
                 strawberryTexture(hit.uv + eY).bump - strawberryTexture(hit.uv - eY).bump,
@@ -2040,8 +2042,8 @@ vec3 image(vec2 uv) {
     /* bubbles */
     if(bubbleAmount > 0.) {
         vec3 q = hit.uv * 7.;
-        float bubbleHeight = 0.1 * clamp(0., 1., bubble(q * bubbleScale)) * bubbleAmount;
-        float height = clamp(0., 1., bubbleHeight * (1. - bump));
+        float bubbleHeight = 0.1 * Z(bubble(q * bubbleScale)) * bubbleAmount;
+        float height = Z(bubbleHeight * (1. - bump));
         vec3 bubbleNormal = -vec3(
                 bubble(bubbleScale * (q + eX)) - bubble(bubbleScale * (q - eX)),
                 bubble(bubbleScale * (q + eY)) - bubble(bubbleScale * (q - eY)),
@@ -2108,7 +2110,7 @@ vec3 image(vec2 uv) {
 
     float shade = softshadow(hit.position, light2Direction, .1, 10., 32.);
 
-    hit.emissive += pow(clamp(1. - depth, 0., 1.), 1.) * 0.25 * fakeSSSAmount;
+    hit.emissive += pow(Z(1. - depth), 1.) * 0.25 * fakeSSSAmount;
 
     if(CHECK_MATERIAL(hit.material, M_BG)) {
         shade = 0.8 + shade * 0.2;
@@ -2121,7 +2123,7 @@ vec3 image(vec2 uv) {
     float ambient = .3;
     color = color * (1. - ambient) + ambient * hit.albedo;
 
-    color = mix(bg, color, 1. - clamp((hit.distance - 40.) / 10., 0., 1.));
+    color = mix(bg, color, 1. - Z((hit.distance - 40.) / 10.));
 
     return color;
 
