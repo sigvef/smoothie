@@ -13,14 +13,14 @@ uniform float resolutionY;
 
 /* dev flags to disable parts of the shader during development for faster
  * compile times */
-//#define SKIP_KIWI
-//#define SKIP_GRAPE
-//#define SKIP_MANDARIN
-//#define SKIP_STRAWBERRY
-//#define SKIP_RASPBERRY
-//#define SKIP_BLENDER
-//#define SKIP_BANANA
-//#define SKIP_PEACH
+#define SKIP_KIWI
+#define SKIP_GRAPE
+#define SKIP_MANDARIN
+#define SKIP_STRAWBERRY
+#define SKIP_RASPBERRY
+#define SKIP_BLENDER
+#define SKIP_BANANA
+#define SKIP_PEACH
 
 #define M_BG 0.
 
