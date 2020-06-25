@@ -3,21 +3,85 @@
     "id": "root",
     "type": "NIN.RootNode",
     "connected": {
-      "screen": "main.render"
+      "screen": "switcher.render"
     }
   },
   {
-    "id": "main",
+    "id": "switcher",
+    "type": "SceneSwitcherNode",
+    "connected": {
+        "kiwi": "kiwi.render",
+        "peach": "peach.render",
+        "grapes": "grapes.render",
+        "raspberry": "raspberry.render",
+        "strawberry": "strawberry.render",
+        "mandarin": "mandarin.render",
+        "banana": "banana.render",
+        "blender": "blender.render"
+    }
+  },
+  {
+    "id": "kiwi",
     "type": "mainNode",
     "options": {
-      "shader": "main"
+      "shader": "main",
+      "fragmentPreamble": "#define IS_KIWI\n\n"
     }
   },
   {
-    "id": "testingnode",
-    "type": "testingnodeNode",
+    "id": "peach",
+    "type": "mainNode",
     "options": {
-      "shader": "testingnode"
+      "shader": "main",
+      "fragmentPreamble": "#define IS_PEACH\n\n"
+    }
+  },
+  {
+    "id": "grapes",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_GRAPE\n\n"
+    }
+  },
+  {
+    "id": "raspberry",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_RASPBERRY\n\n"
+    }
+  },
+  {
+    "id": "strawberry",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_STRAWBERRY\n\n"
+    }
+  },
+  {
+    "id": "mandarin",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_MANDARIN\n\n"
+    }
+  },
+  {
+    "id": "banana",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_BANANA\n\n"
+    }
+  },
+  {
+    "id": "blender",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_BLENDER\n\n"
     }
   }
 ]

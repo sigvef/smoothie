@@ -1,7 +1,9 @@
-(function(global) {
+(function (global) {
   class mainNode extends NIN.ShaderNode {
     constructor(id, options) {
-      super(id, options);
+      const shader = { ...SHADERS[options.shader] };
+      shader.fragmentShader = options.fragmentPreamble + shader.fragmentShader;
+      super(id, { ...options, shader });
     }
 
     update(frame) {

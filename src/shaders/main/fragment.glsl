@@ -10,18 +10,6 @@ uniform float resolutionY;
 /* turn on or off 4xAA */
 //#define AA
 
-
-/* dev flags to disable parts of the shader during development for faster
- * compile times */
-#define SKIP_KIWI
-#define SKIP_GRAPE
-#define SKIP_MANDARIN
-#define SKIP_STRAWBERRY
-#define SKIP_RASPBERRY
-#define SKIP_BLENDER
-#define SKIP_BANANA
-#define SKIP_PEACH
-
 #define M_BG 0.
 
 #define M_STRAWBERRY 2.
@@ -609,7 +597,7 @@ vec3 opRepLim(vec3 p, float c, vec3 l)
 }
 
 
-#ifndef SKIP_BLENDER
+#ifdef IS_BLENDER
 Hit mapBlender(vec3 p) {
     float rotation = frame * 0.01;
     vec3 np = p;
@@ -743,7 +731,7 @@ Hit mapRaspberry(vec3 p) {
 }
 
 
-#ifndef SKIP_STRAWBERRY
+#ifdef IS_STRAWBERRY
 Hit mapStrawberry(vec3 p) {
 
     vec3 xxp = p;
@@ -838,7 +826,7 @@ Hit mapStrawberry(vec3 p) {
 #endif
 
 
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
 Hit mapMandarin(vec3 p, float isShadowMap) {
 
     vec3 nnp = p;
@@ -911,7 +899,7 @@ Hit mapMandarin(vec3 p, float isShadowMap) {
 }
 #endif
 
-#ifndef SKIP_PEACH
+#ifdef IS_PEACH
 Hit mapPeach(vec3 p) {
 
     float scale = 1.25;
@@ -994,7 +982,7 @@ Hit mapPeach(vec3 p) {
 }
 #endif
 
-#ifndef SKIP_BANANA
+#ifdef IS_BANANA
 Hit mapBanana(vec3 p) {
 
     vec3 xxp = p;
@@ -1088,7 +1076,7 @@ Hit mapGrapeHalf(vec3 p, mat4 transform, float cutRotation, float amount) {
     return result;
 }
 
-#ifndef SKIP_GRAPE
+#ifdef IS_GRAPE
 Hit mapGrape(vec3 p) {
     vec3 np = p;
     vec3 xxp = np;
@@ -1150,7 +1138,7 @@ Hit mapGrape(vec3 p) {
 #endif
 
 
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
 Hit mapKiwi(vec3 p) {
 
     vec3 xxp = vec3(p);
@@ -1225,39 +1213,39 @@ Hit mapKiwi(vec3 p) {
 Hit map(vec3 p, float isShadowMap) {
 
     if(frame > 5110. - 0.5) {
-#ifndef SKIP_BLENDER
+#ifdef IS_BLENDER
         return mapBlender(p);
 #endif
         //} else if(frame > 5098. - 0.5) {
 } else if(frame > 5001. - 0.5) {
 
 
-#ifndef SKIP_BANANA
+#ifdef IS_BANANA
 } else if(frame > 4546. - 0.5) {
     return mapBanana(p);
 #endif
 } else if(frame > 3940. - 0.5) {
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
     return mapMandarin(p, isShadowMap);
 #endif
 } else if(frame > 3334. - 0.5) {
-#ifndef SKIP_STRAWBERRY
+#ifdef IS_STRAWBERRY
     return mapStrawberry(p);
 #endif
 } else if(frame > 2727. - 0.5) {
-#ifndef SKIP_RASPBERRY
+#ifdef IS_RASPBERRY
     return mapRaspberry(p);
 #endif
 } else if(frame > 2121. - 0.5) {
-#ifndef SKIP_GRAPE
+#ifdef IS_GRAPE
     return mapGrape(p);
 #endif
-#ifndef SKIP_PEACH
+#ifdef IS_PEACH
 } else if(frame > 1515. - 0.5) {
     return mapPeach(p);
 #endif
 } else if(frame > 908. - 0.5) {
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
     return mapKiwi(p);
 #endif
 } else {
@@ -1329,7 +1317,7 @@ vec3 calculateNormal(vec3 p) {
 }
 
 
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
 vec4 kiwiTexture(vec3 uv) {
 
     uv = opTx(uv, rotateY(PI / 2.));
@@ -1431,7 +1419,7 @@ vec4 kiwiTexture(vec3 uv) {
 }
 #endif
 
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
 MaterialProperties mandarinPeelTexture(vec3 uv) {
     vec2 res = voronoi3(uv * 20., 1.);
 
@@ -1455,7 +1443,7 @@ MaterialProperties mandarinPeelTexture(vec3 uv) {
 }
 #endif
 
-#ifndef SKIP_PEACH
+#ifdef IS_PEACH
 MaterialProperties peachSeedTexture(vec3 uv) {
     float roughness = 0.5 + 0.2 * snoise(uv * 16.);
     float bump = 0.5 + 0.1* snoise(uv * 32.);
@@ -1466,7 +1454,7 @@ MaterialProperties peachSeedTexture(vec3 uv) {
 }
 #endif
 
-#ifndef SKIP_PEACH
+#ifdef IS_PEACH
 MaterialProperties peachTexture(vec3 uv) {
     uv *= 2.;
     float bump = 0.5;
@@ -1501,7 +1489,7 @@ MaterialProperties peachTexture(vec3 uv) {
 }
 #endif
 
-#ifndef SKIP_BANANA
+#ifdef IS_BANANA
 MaterialProperties bananaTexture(vec3 uv) {
     float bump = 0.5;
     float roughness = 0.9;
@@ -1563,7 +1551,7 @@ MaterialProperties bananaTexture(vec3 uv) {
 }
 #endif
 
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
 MaterialProperties mandarinTexture(vec3 uv) {
         float len = length(uv);
         vec3 color = vec3(247., 181., 32.) / 255.;
@@ -1579,7 +1567,7 @@ MaterialProperties mandarinTexture(vec3 uv) {
 }
 #endif
 
-#ifndef SKIP_RASPBERRY
+#ifdef IS_RASPBERRY
 MaterialProperties raspberryTexture(vec3 uv) {
     vec3 color = vec3(249., 27., 70.) / 255.;
     float roughness = 0.;
@@ -1597,7 +1585,7 @@ MaterialProperties raspberryTexture(vec3 uv) {
 }
 #endif
 
-#ifndef SKIP_STRAWBERRY
+#ifdef IS_STRAWBERRY
 MaterialProperties strawberryTexture(vec3 uv) {
     vec3 color = vec3(222., 71., 65.) / 255.;
 
@@ -1626,7 +1614,7 @@ MaterialProperties strawberryTexture(vec3 uv) {
 #endif
 
 
-#ifndef SKIP_GRAPE
+#ifdef IS_GRAPE
 MaterialProperties grapeTexture(vec3 uv) {
 
     float len = length(uv);
@@ -1712,27 +1700,27 @@ vec3 image(vec2 uv) {
         uv *= 2.;
 
         if(splitIndex < -2.5) {
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
             return kiwiTexture(vec3(uv, 0.)).rgb;
 #endif
         } else if(splitIndex < -1.5) {
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
             return kiwiTexture(vec3(uv, 0.)).rgb;
 #endif
         } else if(splitIndex < -0.5) {
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
             return kiwiTexture(vec3(uv, 0.)).rgb;
 #endif
         } else if(splitIndex < 0.5) {
-#ifndef SKIP_GRAPE
+#ifdef IS_GRAPE
             return grapeTexture(vec3(uv, 0.)).albedo;
 #endif
         } else if(splitIndex < 1.5) {
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
             return mandarinTexture(vec3(uv, 0.)).albedo;
 #endif
         } else if(splitIndex < 2.5) {
-#ifndef SKIP_STRAWBERRY
+#ifdef IS_STRAWBERRY
             return strawberryTexture(vec3(uv, 0.)).albedo;
 #endif
         }
@@ -1836,7 +1824,7 @@ vec3 image(vec2 uv) {
     float backsideSide = -1.;
     float backsideRayDirectionStep = 0.01;
     if(CHECK_MATERIAL(hit.material, M_BLENDER)) {
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
     } else if(CHECK_MATERIAL(hit.material, M_MANDARIN_PEEL)) {
         MaterialProperties mp = mandarinPeelTexture(hit.uv);
         hit.albedo = mp.albedo;
@@ -1853,7 +1841,7 @@ vec3 image(vec2 uv) {
                 mandarinPeelTexture(hit.uv + eZ).bump - mandarinPeelTexture(hit.uv - eZ).bump);
         normal = normalize(normal + bumpNormal);
 #endif
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
     } else if(CHECK_MATERIAL(hit.material, M_MANDARIN)) {
         MaterialProperties mp = mandarinTexture(hit.uv);
         hit.albedo = mp.albedo;
@@ -1873,7 +1861,7 @@ vec3 image(vec2 uv) {
         fakeSSSAmount *= 2.;
 #endif
 
-#ifndef SKIP_BLENDER
+#ifdef IS_BLENDER
     } else if(CHECK_MATERIAL(hit.material, M_BLENDER_GLASS)) {
 
         vec3 refracted = refract(rayDirection, normal, 1.52);
@@ -1884,7 +1872,7 @@ vec3 image(vec2 uv) {
         fakeSSSAmount = 3.;
 #endif
 
-#ifndef SKIP_BLENDER
+#ifdef IS_BLENDER
     } else if(CHECK_MATERIAL(hit.material, M_BLENDER_GLASS_SMOOTHIE)) {
 
         vec3 refracted = refract(rayDirection, normal, 1.52);
@@ -1908,7 +1896,7 @@ vec3 image(vec2 uv) {
         fakeSSSAmount = 3.;
 #endif
 
-#ifndef SKIP_RASPBERRY
+#ifdef IS_RASPBERRY
     } else if(CHECK_MATERIAL(hit.material, M_RASPBERRY)) {
         bubbleAmount = 0.;
         bubbleScale = 5.;
@@ -1926,7 +1914,7 @@ vec3 image(vec2 uv) {
         normal = normalize(normal + bumpNormal * bubbleAmount);
 #endif
 
-#ifndef SKIP_PEACH
+#ifdef IS_PEACH
     } else if(CHECK_MATERIAL(hit.material, M_PEACH_SEED)) {
         bubbleAmount = .0;
         bubbleScale = 1.;
@@ -1942,7 +1930,7 @@ vec3 image(vec2 uv) {
         normal = normalize(normal + bumpNormal);
 #endif
 
-#ifndef SKIP_PEACH
+#ifdef IS_PEACH
     } else if(CHECK_MATERIAL(hit.material, M_PEACH)) {
         bubbleScale = 1.2;
         MaterialProperties center = peachTexture(hit.uv);
@@ -1958,7 +1946,7 @@ vec3 image(vec2 uv) {
         normal = normalize(normal + bumpNormal);
 #endif
 
-#ifndef SKIP_BANANA
+#ifdef IS_BANANA
     } else if(CHECK_MATERIAL(hit.material, M_BANANA)) {
         bubbleAmount = .5;
         bubbleScale = 1.;
@@ -1974,7 +1962,7 @@ vec3 image(vec2 uv) {
         normal = normalize(normal + bumpNormal);
 #endif
 
-#ifndef SKIP_STRAWBERRY
+#ifdef IS_STRAWBERRY
     } else if(CHECK_MATERIAL(hit.material, M_STRAWBERRY)) {
         bubbleAmount = max(1. - smosh(0.9, length(hit.uv), 0.1) * 1.1, 0.);
         bubbleScale = 4.;
@@ -1989,7 +1977,7 @@ vec3 image(vec2 uv) {
                 strawberryTexture(hit.uv + eZ).bump - strawberryTexture(hit.uv - eZ).bump);
         normal = normalize(normal + bumpNormal * bubbleAmount);
 #endif
-#ifndef SKIP_GRAPE
+#ifdef IS_GRAPE
     } else if(CHECK_MATERIAL(hit.material, M_GRAPE)) {
 
 
@@ -2011,7 +1999,7 @@ vec3 image(vec2 uv) {
         bubbleAmount = .5;
 #endif
 
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
     } else if(CHECK_MATERIAL(hit.material, M_KIWI)) {
         backsideRayDirectionStep = .01;
         backsideSide = -1.;
@@ -2058,19 +2046,19 @@ vec3 image(vec2 uv) {
 
         Hit newHit = march(hit.position - rayDirection * height, refracted , 1.); 
         if(false) {  // requried for when all cases are skipped
-#ifndef SKIP_RASPBERRY
+#ifdef IS_RASPBERRY
         } else if(CHECK_MATERIAL(hit.material, M_RASPBERRY)) {
             hit.albedo = raspberryTexture(newHit.uv).albedo + 0.1 * skybox(reflected).rgb + height * 0.1;
 #endif
-#ifndef SKIP_STRAWBERRY
+#ifdef IS_STRAWBERRY
         } else if(CHECK_MATERIAL(hit.material, M_STRAWBERRY)) {
             hit.albedo = strawberryTexture(newHit.uv).albedo + 0.1 * skybox(reflected).rgb + height * 0.1;
 #endif
-#ifndef SKIP_MANDARIN
+#ifdef IS_MANDARIN
         } else if(CHECK_MATERIAL(hit.material, M_MANDARIN)) {
             hit.albedo = mandarinTexture(newHit.uv).albedo + 0.1 * skybox(reflected).rgb + height * 0.1;
 #endif
-#ifndef SKIP_GRAPE
+#ifdef IS_GRAPE
         } else if(CHECK_MATERIAL(hit.material, M_GRAPE)) {
             hit.albedo = grapeTexture(newHit.uv).albedo;
             vec3 uvDirection = opTx(rayDirection, newHit.transform);
@@ -2082,15 +2070,15 @@ vec3 image(vec2 uv) {
             hit.albedo = mix(hit.albedo, translucency, 0.75);
             hit.albedo += 0.3 * skybox(reflected).rgb + height * 0.2;
 #endif
-#ifndef SKIP_BANANA
+#ifdef IS_BANANA
         } else if(CHECK_MATERIAL(hit.material, M_BANANA)) {
             hit.albedo = bananaTexture(newHit.uv).albedo + 0.1 * skybox(reflected).rgb + height * 0.1;
 #endif
-#ifndef SKIP_KIWI
+#ifdef IS_KIWI
         } else if(CHECK_MATERIAL(hit.material, M_KIWI)) {
             hit.albedo = kiwiTexture(newHit.uv).rgb + 0.1 * skybox(reflected).rgb + height * 0.1;
 #endif
-#ifndef SKIP_PEACH
+#ifdef IS_PEACH
         } else if(CHECK_MATERIAL(hit.material, M_PEACH)) {
             hit.albedo = peachTexture(newHit.uv).albedo + 0.1 * skybox(reflected).rgb + height * 0.1;
 #endif
@@ -2100,7 +2088,7 @@ vec3 image(vec2 uv) {
     Hit backside = march(hit.position + rayDirection * backsideRayDirectionStep, backsideSide * rayDirection, -backsideSide);
     float depth = length(backside.position - hit.position);
 
-#ifndef SKIP_GRAPE
+#ifdef IS_GRAPE
     if(CHECK_MATERIAL(hit.material, M_GRAPE)) {
         hit.albedo = mix(hit.albedo, grapeTexture(backside.uv).albedo, vec3(0.3));
     }
