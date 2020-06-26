@@ -24,6 +24,8 @@ uniform float resolutionY;
 #define M_BANANA 11.
 #define M_PEACH 12.
 #define M_PEACH_SEED 13.
+#define M_GLASS 14.
+#define M_LIQUID_SMOOTHIE 15.
 
 #define CHECK_MATERIAL(x, material) (((x) > (material - .5)) && ((x) < (material + .5)))
 
@@ -1138,6 +1140,59 @@ Hit mapGrape(vec3 p) {
 #endif
 
 
+Hit mapGlass(vec3 p) {
+
+    p = opTx(p, rotateX(sin(frame * 0.1) * 0.1 + PI / 8.));
+
+    float d = sdSphere(p, 1.);
+
+    d = max(d, -sdSphere(p, 0.95));
+
+    d = opSmoothSubtraction(sdBox(p - vec3(0., 2., 0.), vec3(2.)), d, 0.02);
+    
+    mat4 transform = translate(vec3(0.));
+    Hit result = Hit(d, 0., p, p, transform, vec3(1.), 0., 0., 0., M_GLASS);
+
+    vec3 bg = vec3(223., 245., 191.) / 255.;
+
+    result = add(result, Hit(
+        sdBox(p + vec3(0., 0., -10.), vec3(10., 10., 1.)),
+        0., p, p, transform, bg, 0., 0., 0., M_BG));
+
+    result = add(result, Hit(
+        sdBox(p + vec3(0., 0., 13.), vec3(10., 10., 1.)),
+        0., p, p, transform, bg, 0., 0., 0., M_BG));
+
+    result = add(result, Hit(
+        sdBox(p + vec3(10., 0., 0.), vec3(1., 10., 10.)),
+        0., p, p, transform, bg, 0., 0., 0., M_BG));
+
+    result = add(result, Hit(
+        sdBox(p + vec3(-10., 0., 0.), vec3(1., 10., 10.)),
+        0., p, p, transform, bg, 0., 0., 0., M_BG));
+
+    result = add(result, Hit(
+        sdBox(p + vec3(0., -10., 0.), vec3(10., 1., 10.)),
+        0., p, p, transform, bg, 0., 0., 0., M_BG));
+
+    result = add(result, Hit(
+        sdBox(p + vec3(0., 10., 0.), vec3(10., 1., 10.)),
+        0., p, p, transform, bg, 0., 0., 0., M_BG));
+
+    vec3 strawP = p + vec3(-0.2, 0.2, 0.);
+    strawP = opTx(strawP, rotateZ(3. * PI / 8.));
+    result = add(result, Hit(
+        max(sdCappedCylinder(strawP, .045, 1.),
+            -sdCappedCylinder(strawP, .04, 2.)),
+        0., p, p, transform, bg, 0., 0., 0., M_BG));
+
+    result = add(result, Hit(
+        opSmoothSubtraction(sdBox(p - vec3(0., 1.7 + sin(p.x * 2. + frame * 0.1) * 0.1, 0.), vec3(2.)), sdSphere(p, .95), 0.1),
+        0., p, p, transform, vec3(1., .6, 1.), .2, 0., 0., M_LIQUID_SMOOTHIE));
+    return result;
+}
+
+
 #ifdef IS_KIWI
 Hit mapKiwi(vec3 p) {
 
@@ -1249,7 +1304,7 @@ Hit map(vec3 p, float isShadowMap) {
     return mapKiwi(p);
 #endif
 } else {
-    return Hit(99999., 0., p, p, translate(vec3(0.)), vec3(1.), 0., 0., 0., -1.);
+    return mapGlass(p);
 }
 }
 
@@ -1859,6 +1914,88 @@ vec3 image(vec2 uv) {
         normal = normalize(normal + bumpNormal);
         fakeSSSAmount *= (1. - hit.roughness);
         fakeSSSAmount *= 2.;
+#endif
+
+#ifdef IS_KIWI
+    } else if(CHECK_MATERIAL(hit.material, M_GLASS)) {
+
+        float refractiveIndex = 1. / 1.333;
+
+        vec3 refracted1 = refract(rayDirection, normal, refractiveIndex);
+        vec3 reflected1 = reflect(rayDirection, normal);
+        vec3 raydir = refracted1;
+
+        float inside = 1.;
+        
+        vec3 albedo = vec3(1.);
+
+        if(length(refracted1) < 0.1) {
+            raydir = normalize(reflected1);
+        } else {
+            raydir = normalize(refracted1);
+            inside = -inside;
+        }
+
+        float inch = 0.001;
+        Hit newHit = march(hit.position + raydir * inch, raydir, inside);
+
+        albedo = vec3(length(hit.position - newHit.position));
+
+        if(CHECK_MATERIAL(newHit.material, M_GLASS)) {
+            vec3 norm = calculateNormal(newHit.position) * inside;
+            vec3 refracted2 = refract(raydir, norm, inside > 0. ? 1. / 1.333 : 1.333);
+            vec3 reflected2 = reflect(raydir, norm);
+            if(length(refracted2) < 0.1) {
+                raydir = normalize(reflected2);
+            } else {
+                raydir = normalize(refracted2);
+                inside = -inside;
+            }
+            newHit = march(newHit.position + raydir * inch, raydir, inside);
+
+            if(CHECK_MATERIAL(newHit.material, M_GLASS)) {
+                norm = calculateNormal(newHit.position) * inside;
+                vec3 refracted3 = refract(raydir, norm, inside > 0. ? 1. / 1.333 : 1.333);
+                vec3 reflected3 = reflect(raydir, norm);
+                if(length(refracted3) < 0.1) {
+                    raydir = normalize(reflected3);
+                } else {
+                    raydir = normalize(refracted3);
+                    inside = -inside;
+                }
+                newHit = march(newHit.position + raydir * inch, raydir, inside);
+
+                if(CHECK_MATERIAL(newHit.material, M_GLASS)) {
+                    norm = calculateNormal(newHit.position) * inside;
+                    vec3 refracted4 = refract(raydir, norm, inside > 0. ? 1. / 1.333 : 1.333);
+                    vec3 reflected4 = reflect(raydir, norm);
+                    if(length(refracted4) < 0.1) {
+                        raydir = normalize(reflected4);
+                    } else {
+                        raydir = normalize(refracted4);
+                        inside = -inside;
+                    }
+                    newHit = march(newHit.position + raydir * inch, raydir, inside);
+
+                    albedo = newHit.albedo;
+                } else {
+                    albedo = newHit.albedo;
+                }
+
+                albedo = vec3(1.) * 0.5 + albedo * 0.5;
+            } else {
+                albedo = newHit.albedo;
+            }
+            albedo = vec3(1.) * 0.5 + albedo * 0.5;
+        } else {
+            albedo = newHit.albedo;
+        }
+
+        albedo = vec3(1.) * 0.5 + albedo * 0.5;
+
+
+        hit.albedo = albedo;
+        fakeSSSAmount = 1.;
 #endif
 
 #ifdef IS_BLENDER
