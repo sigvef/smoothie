@@ -26,6 +26,7 @@ uniform float resolutionY;
 #define M_PEACH_SEED 13.
 #define M_GLASS 14.
 #define M_LIQUID_SMOOTHIE 15.
+#define M_METAL 16.
 
 #define CHECK_MATERIAL(x, material) (((x) > (material - .5)) && ((x) < (material + .5)))
 
@@ -652,6 +653,7 @@ Hit mapBlender(vec3 p) {
         roughness = 0.;
         albedo = vec3(1.);
         material = M_BLENDER_GLASS_SMOOTHIE;
+        material = M_GLASS;
     } else {
         albedo = vec3(0.);
         roughness = .7;
@@ -660,14 +662,69 @@ Hit mapBlender(vec3 p) {
 
     float d = sdCappedCylinder(p, r, 1.);
 
+    float containerd = d;
+
+    d = abs(d) - 0.005;
+    d *= 0.5;
+
+    //d = max(d, -sdBox(p - vec3(0., 2., 0.), vec3(2.)));
 
 
     Hit result = Hit(d, 0., np, p, transform, albedo, roughness, metalness, 0., material);
 
-    vec3 bg = vec3(92., 17., 52.) / 255.;
-    result = add(result, Hit(sdBox(xxp - vec3(0., -2., 0.), vec3(100., 2., 100.)), 0., xxp, xxp, translate(vec3(0.)), vec3(1.), 1., 0., 0., M_BG));
-    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 7.), vec3(10., 1.5, 1.)), 0., xxp, xxp, translate(vec3(0.)), bg * 1.5 + 0.3, 1., 0., 0., M_BG));
-    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg * 1.1, 1., 0., 0., M_BG));
+    vec3 knifep = p;
+    knifep += vec3(0., 0.15, 0.);
+    knifep = opTx(knifep, rotateY(+frame * 0.1));
+    knifep = opTx(knifep, rotateZ(-sign(knifep.x) * PI * 0.25));
+    knifep = opTx(knifep, rotateX(PI / 2.));
+    float knifed = sdBox(knifep, vec3(.15, 0.03, 0.002));
+    result = add(result, Hit(knifed, 0., p, p, transform, vec3(0.5), 0.1, 1., 0., M_METAL));
+
+
+    float smooshbase = smosh(5153., frame, (7578. - 5153.) / 2.);
+    float smoosher = smooshbase * 1. / 3. + .5;
+    Hit food = Hit(9999., 0., p, p, transform, vec3(0.), 0.2, 0., 0., M_BG);
+    for(int i = 0; i < 7; i++) {
+        vec3 fp = p;
+        p.y -= 0.2 * length(p.xz);
+        fp = opTx(fp, rotateY(frame * 0.02 + frame * (2. - p.y) * 0.001 + PI * 2. / 7. * float(i)));
+        fp = opTx(fp, rotateZ(2. * PI * 2. / 7. * float(i) + frame * 0.1));
+        fp = fp + vec3(0.2, 0., 0.);
+        vec3 albedo = vec3(1.);
+        if(i == 0) {
+            /* kiwi green */
+            albedo = vec3(185., 219., 106.) / 255.;
+        } else if(i == 1) {
+            /* peach yellow */
+            albedo = vec3(252., 198., 66.) / 255.;
+        } else if(i == 2) {
+            /* grape green */
+            albedo = vec3(222., 232., 134.) / 255.;
+        } else if(i == 3) {
+            /* raspberry red */
+            albedo = vec3(249., 27., 70.) / 255.;
+        } else if(i == 4) {
+            /* strawberry red */
+            albedo = vec3(222., 71., 65.) / 255.;
+        } else if(i == 5) {
+            /* mandarin orange */
+            albedo = vec3(247., 181., 32.) / 255.;
+        } else if(i == 6) {
+            /* banana yellow */
+            albedo = vec3(251., 228., 174.) / 255.;
+        }
+        albedo = mix(albedo, vec3(207., 99., 185.) / 255., smooshbase);
+        food = smadd(food, Hit(sdSphere(fp, .1), 0., p, p, transform, albedo, 0.2, 0., 0., M_BG), smoosher);
+    }
+    food.distance = max(food.distance, containerd + 0.01);
+    result = add(result, food);
+
+    xxp.x += frame * 0.02 + 10. * smooshbase;
+    xxp.y += 0.2;
+    xxp = opRepLim(xxp, 2., vec3(1000., 0., 0.));
+    vec3 bg = vec3(125., 130., 160.) / 255.;
+    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 8.8), vec3(.5, 10., 1.)) - 0.01, 0., xxp, xxp, translate(vec3(0.)), bg * 1.0 + 0.2, 1., 0., 0., M_BG));
+    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(1., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg * 1.1, 1., 0., 0., M_BG));
 
     return result;
 
@@ -910,18 +967,18 @@ Hit mapPeach(vec3 p) {
     vec3 xxp = p;
 
     mat4 transform = translate(vec3(0.));
-    transform *= rotateY(frame * 0.02);
-    transform *= rotateX(frame * 0.02);
+    transform *= rotateY(-0.1 + frame * 0.02);
+    transform *= rotateX(0. + frame * 0.02);
 
     float t = mod((frame + 1.) * 190. / 60. / 60. / 4. / 2., 1.);
 
-    float dropT = smosh(0., t, 0.15);
+    float dropT = smosh(-0.25, t, 0.5);
     float chunkT = smosh(0.25, t, 0.15);
     float chunkT2 = smosh(0.5, t, 0.15);
-    float outT = smosh(0.85, t, 0.15);
+    float outT = smosh(0.85, t, 0.30);
 
-    p.x += mix(-4.5, 0., dropT);
-    p.x += mix(0., 4.5, outT);
+    p.x += mix(-4.5 * 2., 0., dropT);
+    p.x += mix(0., 4.5 * 2., outT);
     p.x += 0.1;
 
     p = opTx(p, transform);
@@ -1809,19 +1866,12 @@ vec3 image(vec2 uv) {
 
 
 
+    float snare = pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. + 1., 2.)), 2.) * 2.;
+
     vec3 cameraPosition = vec3(0., 0., -12.);
-    vec3 rayDirection = normalize(vec3(uv, 4.));
+    vec3 rayDirection = normalize(vec3(uv, 4. - 0.2 * snare));
 
-
-    if(frame > 5456. - 0.5) {
-        cameraPosition = vec3(.6, 3., -15.);
-        rayDirection = opTx(rayDirection, rotateZ(0.01 + (frame - 5456.) * 0.0001));
-        rayDirection = opTx(rayDirection, rotateX(0.18));
-    } else if(frame > 5304. - 0.5) {
-        cameraPosition = vec3(-.6, 2., -9.);
-        rayDirection = opTx(rayDirection, rotateZ(0.01 + (frame - 5304.) * 0.0001));
-        rayDirection = opTx(rayDirection, rotateX(0.12));
-    } else if(frame > 5153. - 0.5) {
+    if(frame > 5153. - 0.5) {
         cameraPosition = vec3(.6, 3., -9.);
         rayDirection = opTx(rayDirection, rotateZ(0.1 - (frame - 5153.) * 0.0002));
         rayDirection = opTx(rayDirection, rotateX(0.22));
@@ -1830,7 +1880,10 @@ vec3 image(vec2 uv) {
         vec3 cameraPosition = vec3(0., 1.3, -5.);
     }
 
+    cameraPosition.z += snare;
+
     if(frame >  5153. - 0.5) {
+        /*
         float shakespeed = smosh(5153., frame, 7578. - 5153.) * 0.05;
         float shakeamount = smosh(5153., frame, 7578. - 5153.) * 0.01 + 0.001;
         float noiz = snoise(vec3(frame * shakespeed, 0., 0.)) - 0.5;
@@ -1839,6 +1892,7 @@ vec3 image(vec2 uv) {
         rayDirection = opTx(rayDirection, rotateX(noiz * shakeamount));
         rayDirection = opTx(rayDirection, rotateY(noiz2 * shakeamount));
         rayDirection = opTx(rayDirection, rotateZ(noiz3 * shakeamount));
+        */
     }
 
 
@@ -1916,7 +1970,7 @@ vec3 image(vec2 uv) {
         fakeSSSAmount *= 2.;
 #endif
 
-#ifdef IS_KIWI
+#ifdef IS_BLENDER
     } else if(CHECK_MATERIAL(hit.material, M_GLASS)) {
 
         float refractiveIndex = 1. / 1.333;
@@ -1940,6 +1994,11 @@ vec3 image(vec2 uv) {
         Hit newHit = march(hit.position + raydir * inch, raydir, inside);
 
         albedo = vec3(length(hit.position - newHit.position));
+
+        float angle = atan(hit.uv.z, hit.uv.x);
+        float whitenesser = smosh(.6 + 0.05 * sin(angle), hit.uv.y, 0.02);
+        float whiteness = mix(0.25, 0.2, whitenesser);
+        vec3 whiteTint = mix(vec3(195., 128., 224.) / 255., vec3(1.), 0.8 + 0.2 * whitenesser);
 
         if(CHECK_MATERIAL(newHit.material, M_GLASS)) {
             vec3 norm = calculateNormal(newHit.position) * inside;
@@ -1977,21 +2036,22 @@ vec3 image(vec2 uv) {
                     }
                     newHit = march(newHit.position + raydir * inch, raydir, inside);
 
-                    albedo = newHit.albedo;
+                    albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
                 } else {
-                    albedo = newHit.albedo;
+                    albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
                 }
 
-                albedo = vec3(1.) * 0.5 + albedo * 0.5;
+                albedo = whiteTint * whiteness + albedo * (1. - whiteness);
             } else {
-                albedo = newHit.albedo;
+                albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
             }
-            albedo = vec3(1.) * 0.5 + albedo * 0.5;
+            albedo = whiteTint * whiteness + albedo * (1. - whiteness);
         } else {
-            albedo = newHit.albedo;
+            vec3 norm = calculateNormal(newHit.position) * inside;
+            albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
         }
 
-        albedo = vec3(1.) * 0.5 + albedo * 0.5;
+        albedo = whiteTint * whiteness + albedo * (1. - whiteness);
 
 
         hit.albedo = albedo;
