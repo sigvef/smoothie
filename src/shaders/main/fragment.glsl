@@ -1332,16 +1332,21 @@ Hit mapOutro(vec3 p) {
 
     Hit result = Hit(d, 0., p, p, transform, vec3(1.), 1., 0., 0., M_BG);
 
-    xxp += vec3(1., 0., 0.);
+    xxp += vec3(1., .5, 0.);
 
-    float r = 0.2;
+    float r = 0.3 + xxp.y * 0.1;
+    float outr = r + 0. * abs(sin(xxp.y * 22.)) * 0.001;
     float gh = 0.5;
-    float glassd = sdCappedCylinder(xxp, r, gh) - 0.05;
-    float containerd = sdCappedCylinder(xxp - vec3(0., gh + 0.05, 0.), r - 0.01, gh  * 2.);
+    float glassd = sdCappedCylinder(xxp, outr, gh) - 0.005;
+    float containerd = sdCappedCylinder(xxp - vec3(0., gh + 0.05, 0.), r - 0.05, gh  * 2.);
+
+    float smoothied = max(sdSphere(xxp + vec3(0., 1.8, 0.), 2.), containerd + 0.001);
 
     glassd = opSmoothSubtraction(containerd, glassd, 0.05);
     Hit glassresult = Hit(glassd, 0., xxp, xxp, transform, vec3(1.), 0., 0., 0., M_GLASS);
     result = add(glassresult, result);
+
+    result = add(result, Hit(smoothied, 0., xxp, xxp, transform, vec3(1., 0.5, 1.), 0., 0., 0., M_BG));
 
 
     vec3 bg = vec3(226., 250., 192.) / 255. * 0.8;
@@ -1350,6 +1355,7 @@ Hit mapOutro(vec3 p) {
 
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 7.), vec3(1.4, 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg, 1., 0., 0., M_BG));
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
+    result = add(result, Hit(sdBox(xxp + vec3(0., 10.5, 0.), vec3(10., 10., 10.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
     return result;
 }
 #endif
