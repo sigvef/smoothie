@@ -11,6 +11,7 @@
           mandarin: new NIN.TextureInput(),
           banana: new NIN.TextureInput(),
           blender: new NIN.TextureInput(),
+          outro: new NIN.TextureInput(),
         },
         outputs: {
           render: new NIN.TextureOutput(),
@@ -27,9 +28,12 @@
       this.inputs.mandarin.enabled = false;
       this.inputs.banana.enabled = false;
       this.inputs.blender.enabled = false;
+      this.inputs.outro.enabled = false;
 
       let selectedScene;
-      if (frame >= 5153) {
+      if (frame >= 7578) {
+        selectedScene = this.inputs.outro;
+      } else if (frame >= 5153) {
         selectedScene = this.inputs.blender;
       } else if (frame >= 4546) {
         selectedScene = this.inputs.banana;

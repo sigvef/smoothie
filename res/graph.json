@@ -10,14 +10,15 @@
     "id": "switcher",
     "type": "SceneSwitcherNode",
     "connected": {
-        "kiwi": "kiwi.render",
-        "peach": "peach.render",
-        "grapes": "grapes.render",
-        "raspberry": "raspberry.render",
-        "strawberry": "strawberry.render",
-        "mandarin": "mandarin.render",
-        "banana": "banana.render",
-        "blender": "blender.render"
+      "kiwi": "kiwi.render",
+      "peach": "peach.render",
+      "grapes": "grapes.render",
+      "raspberry": "raspberry.render",
+      "strawberry": "strawberry.render",
+      "mandarin": "mandarin.render",
+      "banana": "banana.render",
+      "blender": "blender.render",
+      "outro": "outro.render"
     }
   },
   {
@@ -82,6 +83,14 @@
     "options": {
       "shader": "main",
       "fragmentPreamble": "#define IS_BLENDER\n\n"
+    }
+  },
+  {
+    "id": "outro",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_OUTRO\n\n"
     }
   }
 ]
