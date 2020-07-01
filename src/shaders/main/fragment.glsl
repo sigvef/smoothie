@@ -13,10 +13,16 @@ uniform vec2 ninjadevTriangles[NINJADEV_TRIANGLE_COUNT];
 
 #ifdef IS_BLENDER
 #define USE_GLASS
+#define USE_WOOD
 #endif
 #ifdef IS_OUTRO
 #define USE_GLASS
+#define USE_WOOD
+#define IS_KIWI
 #endif
+
+
+#define SMOOTHIE_COLOR (vec3(207., 99., 185.) / 255.)
 
 /* turn on or off 4xAA */
 //#define AA
@@ -38,6 +44,8 @@ uniform vec2 ninjadevTriangles[NINJADEV_TRIANGLE_COUNT];
 #define M_GLASS 14.
 #define M_LIQUID_SMOOTHIE 15.
 #define M_METAL 16.
+#define M_STRAW 17.
+#define M_WOOD 18.
 
 #define CHECK_MATERIAL(x, material) (((x) > (material - .5)) && ((x) < (material + .5)))
 
@@ -625,6 +633,108 @@ vec3 opRepLim(vec3 p, float c, vec3 l)
     return q;
 }
 
+#ifdef IS_KIWI
+vec4 kiwiTexture(vec3 uv) {
+
+    uv = opTx(uv, rotateY(PI / 2.));
+
+    uv /= 0.99;
+
+    //uv.x *= .5;
+
+
+    float zOffset = pow(1. - abs(uv.z), .5);
+
+    float angle = atan(uv.y, uv.x);
+
+
+    float lenScale = 1.25;
+
+    float whiteLimit = 0.15;
+    whiteLimit *= 1. + 0.2 * sin(uv.x * 8.) * sin(angle * 3.) + 0.1 * cos(angle * 3.);
+
+    float len = length(uv);
+    len = pow(len, 2.) * lenScale;
+
+    //len += 1. - zOffset;
+
+
+    if(length(uv) > 0.999) {
+        float f = 0.1 * (1. - bubble(20. * vec3(angle * 5., uv.y, 0.)));
+        vec2 s = vec2(0.001, 0.);
+        vec3 eX = s.xyy;
+        vec3 eY = s.yxy;
+        vec3 eZ = s.yyx;
+        uv *= 18.;
+        vec2 res = voronoi3(uv, 1.);
+
+        float j = (res.x - res.y * 0.75) * 20.;
+
+        res = voronoi3(100. + uv, 1.);
+
+        j = smosh(0.30, max(0., j), 0.4);
+
+        uv *= 1.5;
+        j = mix(j, (res.x - res.y * 0.75) * 20., 0.5);
+        j = smosh(0.6, max(0., j), 0.1);
+
+        f *= 0.5;
+        j *= 0.08;
+
+        vec3 color = vec3(157., 131., 55.) / 255. + f + j; 
+
+        color = pow(color, vec3(1.1));
+
+        return vec4(color , f + j * 2.);  
+    }
+
+
+    vec3 outerGreen = vec3(65., 145., 40.) / 255.;
+    vec3 innerGreen = vec3(182., 201., 115.) / 255.;
+    innerGreen = vec3(143., 204., 60.) / 255.;
+    innerGreen = vec3(185., 219., 106.) / 255.;
+
+    vec3 darkTapGreen = vec3(64., 114., 11.) / 255. * 1.2;
+    vec3 whiteCenter = vec3(251., 251., 198.) / 255.;
+    vec3 whiteCenterBorderish = vec3(122., 133., 29.) / 255.;
+    vec3 whiteCenterBorder = vec3(170., 181., 78.) / 255.;
+
+    float taps = 36. / 2.;
+
+    angle += 0.02 * sin(angle * taps * 2.);
+    float normalizedLen = length(uv.xy);
+
+
+    vec3 color = mix(innerGreen, outerGreen, pow(Z((normalizedLen - whiteLimit * lenScale) / (1. - whiteLimit * lenScale)), 3.));
+
+    color = mix(color, darkTapGreen, 0.8 * max(step(len, whiteLimit), smosh(len - whiteLimit + 0.4, abs(sin(angle * taps)), .5 )));
+
+    color = mix(color, darkTapGreen, 0.1 * max(step(len, whiteLimit), pow(smosh(len - whiteLimit + 0.3, abs(pow(sin(angle * taps), 32.)), .1 ), 32.)));
+
+
+
+    color = mix(color, whiteCenterBorder, smosh(len, whiteLimit + .1, .1));
+
+    color = mix(color, whiteCenterBorderish, smosh(len, whiteLimit + .02, .02));
+
+    color = mix(color, whiteCenter, smosh(len, whiteLimit, 0.01));
+
+    color = mix(color, whiteCenter, max(step(len, whiteLimit), smosh(len - whiteLimit + 0.85, abs(pow(sin(PI / 2. + angle * taps), .15)), 0.15)));
+    color = mix(color, whiteCenter, max(step(len, whiteLimit), smosh(len - whiteLimit + .88, abs(pow(sin(angle * taps), 32.)), .15)));
+
+
+    float seedAmount = pow(
+            Z(2. * (1. - smosh(0.3, len, 0.2)) * smosh(whiteLimit, len , .05) * abs(sin(angle * taps)) * abs(cos(sin(angle * 5.) + sin(angle * 3.) + sin(angle * 7.) + sin(angle * 11.) + pow(len, .5) *20.)) * .5),
+            4.);
+
+    color = mix(color, vec3(0.), seedAmount);
+
+    color = pow(color, vec3(1.2));
+
+    return vec4(color, seedAmount);   
+}
+#endif
+
 
 #ifdef IS_BLENDER
 Hit mapBlender(vec3 p) {
@@ -634,7 +744,7 @@ Hit mapBlender(vec3 p) {
 
     mat4 transform = translate(vec3(0.));
 
-    transform *= rotateY(-frame * 0.005);
+    transform *= rotateY(PI / 2.);
 
     p.y -= 1.;
 
@@ -760,19 +870,35 @@ Hit mapBlender(vec3 p) {
             /* banana yellow */
             albedo = vec3(251., 228., 174.) / 255.;
         }
-        albedo = mix(albedo, vec3(207., 99., 185.) / 255., smooshbase);
+        albedo = mix(albedo, SMOOTHIE_COLOR, smooshbase);
         food = smadd(food, Hit(sdSphere(fp, .1), 0., p, p, transform, albedo, 0.2, 0., 0., M_BG), smoosher);
     }
-    food = smadd(food, Hit(sdSphere(p + vec3(0., 0.4, 0.), .2), 0., p, p, transform, vec3(207., 99., 185.) / 255., 0.2, 0., 0., M_BG), 1.);
+    food = smadd(food, Hit(sdSphere(p + vec3(0., 0.4, 0.), .2), 0., p, p, transform, SMOOTHIE_COLOR, 0.2, 0., 0., M_BG), 1.);
     food.distance = max(food.distance, containerd + 0.01);
     result = add(result, food);
 
-    xxp.x += frame * 0.02 + 10. * smooshbase;
+    vec3 wp = xxp;
+
+    xxp = opTx(xxp, rotateZ(PI * 2. + PI / 2. * smosh(6365. - 15., frame, 30.) * (1. - 2. * smosh(6365., frame, 0.))));
+
+    xxp.x += frame * 0.02 + 10. * smooshbase + frame * 0.04 * smosh(6365., frame, 0.);
     xxp.y += 0.2;
+
     xxp = opRepLim(xxp, 2., vec3(1000., 0., 0.));
     vec3 bg = vec3(125., 130., 160.) / 255.;
-    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 8.8), vec3(.5, 10., 1.)) - 0.01, 0., xxp, xxp, translate(vec3(0.)), bg * 1.0 + 0.2, 1., 0., 0., M_BG));
+
+    if(frame - 0.5 > 5759.) {
+        bg = vec3(252., 238., 78.) / 255. * 0.9;
+    }
+    if(frame - 0.5 > 6365.) {
+        bg = vec3(.2, .6, .8);
+    }
+
+    float snare7 = pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. * 7. + 6., 14.) / 7.), 2.) * 2.;
+
+    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 8.8), vec3(.5 + 0.05 * snare7, 10., 1.)) - 0.01, 0., xxp, xxp, translate(vec3(0.)), bg * 1.0 + 0.2 + 0.1 * snare7, 1., 0., 0., M_BG));
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(1., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg * 1.1, 1., 0., 0., M_BG));
+    result = add(result, Hit(sdCappedCylinder(wp + vec3(0., 10., 0.), 1., 10.) - 0.01, 0., wp, wp, translate(vec3(0.)), vec3(1.), .1, 0., .0, M_WOOD));
 
     return result;
 
@@ -1304,58 +1430,85 @@ Hit mapGlass(vec3 p) {
 #ifdef IS_OUTRO
 Hit mapOutro(vec3 p) {
     vec3 xxp = p;
+    vec3 kp = p;
     mat4 transform = translate(vec3(0.));
+
+    p += vec3(-.4, -1.1, -2.);
+    float scale = 12.;
+
+    p -= vec3(-6., -13.5, 0.) / scale;
+
+    float rotater = min(PI * 1., mod(frame * 0.1 + p.x, PI * 4.));
+    rotater += PI * smosh(rotater, PI / 2., 0.01);
+    transform *= rotateX(rotater + PI);
 
     p = opTx(p, transform);
 
     float d = 99999.;
 
-    float scale = 20.;
     p *= scale;
 
-    p -= vec3(-12., 4.5, 0.);
+    p += vec3(0., -5., 0.);
+
 
     for(int i = 0; i < NINJADEV_TRIANGLE_COUNT; i += 3) {
         d = min(d, sdTriangle(vec2(p.x, -p.y), ninjadevTriangles[i], ninjadevTriangles[i + 1], ninjadevTriangles[i + 2]));
     }
 
-    float h = 1.;
-    vec2 w = vec2(d, abs(p.z) - h);
+    float h = 2.;
+    vec2 w = vec2(d, abs(p.z + 0.) - h);
     d = min(max(w.x,w.y),0.0) + length(max(w,0.0));
 
-    d -= 0.2;
+    d -= 0.08;
 
     d /= scale;
 
-    d = abs(d - 0.01);
+    Hit result = Hit(d, 0., xxp, (p / scale - vec3(1., -3.5, 0.)) * .25, transform, vec3(1.), 1., 0., 0., M_KIWI);
 
-
-    Hit result = Hit(d, 0., p, p, transform, vec3(1.), 1., 0., 0., M_BG);
-
-    xxp += vec3(1., .5, 0.);
+    xxp += vec3(0.9, -.15, 2.);
 
     float r = 0.3 + xxp.y * 0.1;
     float outr = r + 0. * abs(sin(xxp.y * 22.)) * 0.001;
     float gh = 0.5;
     float glassd = sdCappedCylinder(xxp, outr, gh) - 0.005;
-    float containerd = sdCappedCylinder(xxp - vec3(0., gh + 0.05, 0.), r - 0.05, gh  * 2.);
+    float containerd = sdCappedCylinder(xxp - vec3(0., gh + 0.05, 0.), r - 0.01, gh  * 2.);
 
-    float smoothied = max(sdSphere(xxp + vec3(0., 1.8, 0.), 2.), containerd + 0.001);
+    float smoothied = max(sdSphere(xxp + vec3(0., 1.6 + 0.005 * sin(frame * 0.1 + p.x + p.y * 3.), 0.), 2.), containerd + 0.02);
 
     glassd = opSmoothSubtraction(containerd, glassd, 0.05);
+    glassd -= 0.01;
     Hit glassresult = Hit(glassd, 0., xxp, xxp, transform, vec3(1.), 0., 0., 0., M_GLASS);
     result = add(glassresult, result);
 
-    result = add(result, Hit(smoothied, 0., xxp, xxp, transform, vec3(1., 0.5, 1.), 0., 0., 0., M_BG));
+    result = add(result, Hit(smoothied, 0., xxp, xxp, transform, SMOOTHIE_COLOR, 0.1, 0., 0.2, M_LIQUID_SMOOTHIE));
 
+    vec3 strawp = opTx(xxp - vec3(0.032, 0., 0.), rotateZ(0.5));
 
-    vec3 bg = vec3(226., 250., 192.) / 255. * 0.8;
-    vec3 bg2 = vec3(110., 85., 55.) / 255. * 1.1;
+    float strawd = max(sdCappedCylinder(strawp, 0.035, 1.), -sdCappedCylinder(xxp, 0.032, 1.1));
+    float angle = atan(strawp.z, strawp.x);
+    float angler = Z(sin(angle * 3. + 10. + strawp.y * 50.));
+    vec3 strawcolor = mix(vec3(1.), vec3(0.4, 1., 1.), smosh(0.2, angler, 0.01)) * 0.9;
 
+    result = add(result, Hit(strawd, 0., strawp, strawp, transform, strawcolor, 1., 0., 0., M_STRAW));
 
-    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 7.), vec3(1.4, 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg, 1., 0., 0., M_BG));
-    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
-    result = add(result, Hit(sdBox(xxp + vec3(0., 10.5, 0.), vec3(10., 10., 10.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
+    vec3 bg = vec3(248., 205., 222.) / 255.;
+    vec3 bg2 = vec3(248., 205., 222.) / 255.;
+
+    float kscale = 4.;
+    float sqs = 1.1;
+    kp += vec3(1.3, 0.1, 2.5);
+    kp *= kscale;
+    kp.y *= sqs;
+    mat4 kt = rotateY(-1.9);
+    kt *= rotateZ(-.5);
+    kp = opTx(kp, kt);
+    float kiwid = max(sdSphere(kp, 1.), sdBox(kp + vec3(2., 0., 0.), vec3(2.)));
+    kiwid /= kscale;
+    kiwid /= sqs;
+    result = add(result, Hit(kiwid, 0., kp, kp, kt, vec3(1.), 0., 0., 0., M_KIWI));
+
+    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 12.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
+    result = add(result, Hit(sdCappedCylinder(xxp + vec3(0., 10.51, 0.), 1.2, 10.) - 0.01, 0., xxp, xxp, translate(vec3(0.)), bg, .1, 0., .0, M_WOOD));
     return result;
 }
 #endif
@@ -1541,107 +1694,6 @@ vec3 calculateNormal(vec3 p) {
 }
 
 
-#ifdef IS_KIWI
-vec4 kiwiTexture(vec3 uv) {
-
-    uv = opTx(uv, rotateY(PI / 2.));
-
-    uv /= 0.99;
-
-    //uv.x *= .5;
-
-
-    float zOffset = pow(1. - abs(uv.z), .5);
-
-    float angle = atan(uv.y, uv.x);
-
-
-    float lenScale = 1.25;
-
-    float whiteLimit = 0.15;
-    whiteLimit *= 1. + 0.2 * sin(uv.x * 8.) * sin(angle * 3.) + 0.1 * cos(angle * 3.);
-
-    float len = length(uv);
-    len = pow(len, 2.) * lenScale;
-
-    //len += 1. - zOffset;
-
-
-    if(length(uv) > 0.999) {
-        float f = 0.1 * (1. - bubble(20. * vec3(angle * 5., uv.y, 0.)));
-        vec2 s = vec2(0.001, 0.);
-        vec3 eX = s.xyy;
-        vec3 eY = s.yxy;
-        vec3 eZ = s.yyx;
-        uv *= 18.;
-        vec2 res = voronoi3(uv, 1.);
-
-        float j = (res.x - res.y * 0.75) * 20.;
-
-        res = voronoi3(100. + uv, 1.);
-
-        j = smosh(0.30, max(0., j), 0.4);
-
-        uv *= 1.5;
-        j = mix(j, (res.x - res.y * 0.75) * 20., 0.5);
-        j = smosh(0.6, max(0., j), 0.1);
-
-        f *= 0.5;
-        j *= 0.08;
-
-        vec3 color = vec3(157., 131., 55.) / 255. + f + j; 
-
-        color = pow(color, vec3(1.1));
-
-        return vec4(color , f + j * 2.);  
-    }
-
-
-    vec3 outerGreen = vec3(65., 145., 40.) / 255.;
-    vec3 innerGreen = vec3(182., 201., 115.) / 255.;
-    innerGreen = vec3(143., 204., 60.) / 255.;
-    innerGreen = vec3(185., 219., 106.) / 255.;
-
-    vec3 darkTapGreen = vec3(64., 114., 11.) / 255. * 1.2;
-    vec3 whiteCenter = vec3(251., 251., 198.) / 255.;
-    vec3 whiteCenterBorderish = vec3(122., 133., 29.) / 255.;
-    vec3 whiteCenterBorder = vec3(170., 181., 78.) / 255.;
-
-    float taps = 36. / 2.;
-
-    angle += 0.02 * sin(angle * taps * 2.);
-    float normalizedLen = length(uv.xy);
-
-
-    vec3 color = mix(innerGreen, outerGreen, pow(Z((normalizedLen - whiteLimit * lenScale) / (1. - whiteLimit * lenScale)), 3.));
-
-    color = mix(color, darkTapGreen, 0.8 * max(step(len, whiteLimit), smosh(len - whiteLimit + 0.4, abs(sin(angle * taps)), .5 )));
-
-    color = mix(color, darkTapGreen, 0.1 * max(step(len, whiteLimit), pow(smosh(len - whiteLimit + 0.3, abs(pow(sin(angle * taps), 32.)), .1 ), 32.)));
-
-
-
-    color = mix(color, whiteCenterBorder, smosh(len, whiteLimit + .1, .1));
-
-    color = mix(color, whiteCenterBorderish, smosh(len, whiteLimit + .02, .02));
-
-    color = mix(color, whiteCenter, smosh(len, whiteLimit, 0.01));
-
-    color = mix(color, whiteCenter, max(step(len, whiteLimit), smosh(len - whiteLimit + 0.85, abs(pow(sin(PI / 2. + angle * taps), .15)), 0.15)));
-    color = mix(color, whiteCenter, max(step(len, whiteLimit), smosh(len - whiteLimit + .88, abs(pow(sin(angle * taps), 32.)), .15)));
-
-
-    float seedAmount = pow(
-            Z(2. * (1. - smosh(0.3, len, 0.2)) * smosh(whiteLimit, len , .05) * abs(sin(angle * taps)) * abs(cos(sin(angle * 5.) + sin(angle * 3.) + sin(angle * 7.) + sin(angle * 11.) + pow(len, .5) *20.)) * .5),
-            4.);
-
-    color = mix(color, vec3(0.), seedAmount);
-
-    color = pow(color, vec3(1.2));
-
-    return vec4(color, seedAmount);   
-}
-#endif
 
 #ifdef IS_MANDARIN
 MaterialProperties mandarinPeelTexture(vec3 uv) {
@@ -1978,33 +2030,39 @@ vec3 image(vec2 uv) {
 
 
 
-    float snare = pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. + 1., 2.)), 2.) * 2.;
+    float snare = (1. - smosh(5153., frame, 0.)) * pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. + 1., 2.)), 2.) * 2.;
+
+    float snare7 = smosh(6365., frame, 0.) * pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. * 7. + 6., 14.) / 7.), 2.) * 2.;
 
     vec3 cameraPosition = vec3(0., 0., -12.);
     vec3 rayDirection = normalize(vec3(uv, 4. - 0.2 * snare));
 
     if(frame > 5153. - 0.5 && frame < 7578. - 0.5) {
-        cameraPosition = vec3(.6, 3., -9.);
-        rayDirection = opTx(rayDirection, rotateZ(0.1 - (frame - 5153.) * 0.0002));
+        cameraPosition = vec3(mix(-1., .6, smosh(5153., frame, 6365. - 5153.)), 3., -10.);
+        if(frame < 6365. - 0.5) {
+            rayDirection = opTx(rayDirection, rotateZ(0.1 - (frame - 5153.) * 0.00018));
+        }
         rayDirection = opTx(rayDirection, rotateX(0.22));
-        rayDirection.x += (frame - 5153.) * 0.0001;
+        //rayDirection.x += (frame - 5153.) * 0.0001;
     } else if(frame > 5110. - 0.5) {
         vec3 cameraPosition = vec3(0., 1.3, -5.);
     }
 
+    if(frame > 7578. - 0.5) {
+        cameraPosition = vec3(0., 2.3, -12.);
+        rayDirection = opTx(rayDirection, rotateX(0.2));
+    }
     cameraPosition.z += snare;
 
     if(frame >  5153. - 0.5) {
-        /*
-        float shakespeed = smosh(5153., frame, 7578. - 5153.) * 0.05;
-        float shakeamount = smosh(5153., frame, 7578. - 5153.) * 0.01 + 0.001;
+        float shakespeed = 0.05 + snare7 * 0.01;
+        float shakeamount = snare7 * 0.005 + 0.003 * smosh(5153., frame, 6365. - 5153.);
         float noiz = snoise(vec3(frame * shakespeed, 0., 0.)) - 0.5;
         float noiz2 = snoise(vec3(frame * shakespeed, 10., 10.)) - 0.5;
         float noiz3 = snoise(vec3(frame * shakespeed, 50., 50.)) - 0.5;
         rayDirection = opTx(rayDirection, rotateX(noiz * shakeamount));
         rayDirection = opTx(rayDirection, rotateY(noiz2 * shakeamount));
         rayDirection = opTx(rayDirection, rotateZ(noiz3 * shakeamount));
-        */
     }
 
 
@@ -2012,7 +2070,7 @@ vec3 image(vec2 uv) {
 
 
     if(length(hit.position - cameraPosition) > 50.) {
-        return bg;
+        return skybox(rayDirection);
     }
 
 
@@ -2081,7 +2139,41 @@ vec3 image(vec2 uv) {
         fakeSSSAmount *= (1. - hit.roughness);
         fakeSSSAmount *= 2.;
 #endif
+#ifdef IS_OUTRO
+    } else if(CHECK_MATERIAL(hit.material, M_STRAW)) {
+        bubbleAmount = 0.;
+        fakeSSSAmount = .2; 
+        hit.roughness = 0.5 + 0.2 * snoise(hit.uv * 32.);
+#endif
+#ifdef USE_WOOD
+    } else if(CHECK_MATERIAL(hit.material, M_WOOD)) {
+        bubbleAmount = 0.;
+        fakeSSSAmount = .1; 
+        vec3 uv = hit.uv * vec3(20., .3, .3);
+        float noiz = pow(snoise(uv), 4.);
+        hit.albedo = mix(vec3(237., 192., 133.) / 255., vec3(134., 89., 27.) / 255., noiz);
+        hit.roughness = 0.3 + noiz * 0.5;
+        bumpNormal = -vec3(
+                pow(snoise(uv + eX), 4.) - pow(snoise(uv - eX), 4.),
+                pow(snoise(uv + eY), 4.) - pow(snoise(uv - eY), 4.),
+                pow(snoise(uv + eZ), 4.) - pow(snoise(uv - eZ), 4.));
+        normal = normalize(normal + bumpNormal);
+        vec3 reflected = reflect(rayDirection, normal);
+        hit.albedo += 0.1 * skybox(reflected);
 
+        Hit newHit = march(hit.position + 0.001 * reflected, reflected, 1.);
+        float l = length(hit.position - newHit.position) * 0.01 + 1.;
+        vec3 c = newHit.albedo;
+        if(CHECK_MATERIAL(newHit.material, M_GLASS)) {
+            c = SMOOTHIE_COLOR;
+        }
+#ifdef IS_KIWI
+        if(CHECK_MATERIAL(newHit.material, M_KIWI)) {
+            c = kiwiTexture(newHit.uv).rgb;
+        }
+#endif
+        hit.albedo += (1. - hit.roughness) * 0.5 * newHit.albedo / l * c;
+#endif 
 #ifdef USE_GLASS
     } else if(CHECK_MATERIAL(hit.material, M_GLASS)) {
 
@@ -2108,8 +2200,9 @@ vec3 image(vec2 uv) {
         albedo = vec3(length(hit.position - newHit.position));
 
         float angle = atan(hit.uv.z, hit.uv.x);
-        float whitenesser = smosh(.55 + 0.05 * sin(angle), hit.uv.y, 0.02);
-        float whiteness = mix(0.25, 0.2, whitenesser);
+        float whitenesser = smosh(.55 + 0.02 * sin(angle * 2.) + 0.01 * sin(0.3 + angle * 3.), hit.uv.y, 0.02);
+        float whiteness = mix(0.3, 0.2, whitenesser);
+        whiteness += 0.15;
         vec3 whiteTint = mix(vec3(195., 128., 224.) / 255., vec3(1.), 0.8 + 0.2 * whitenesser);
 
         if(CHECK_MATERIAL(newHit.material, M_GLASS)) {
@@ -2163,7 +2256,12 @@ vec3 image(vec2 uv) {
             albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
         }
 
-        albedo = whiteTint * whiteness + albedo * (1. - whiteness);
+        vec3 norm = calculateNormal(newHit.position) * inside;
+        albedo = whiteTint * whiteness + albedo * (1. - whiteness) * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
+            if(CHECK_MATERIAL(newHit.material, M_LIQUID_SMOOTHIE)) {
+                vec3 reflected2 = reflect(raydir, norm);
+                albedo += 0.1 * skybox(reflected2);
+            }
 
 
         hit.albedo = albedo;
@@ -2412,7 +2510,9 @@ vec3 image(vec2 uv) {
 
     float safer = 0.9;
 
-    float shade = softshadow(hit.position, light2Direction, .1, 10., 32., safer);
+    float shadowK = mix(32., 32., smosh(7578., frame, 0.01));
+
+    float shade = softshadow(hit.position, light2Direction, .1, 10., shadowK, safer);
 
     hit.emissive += pow(Z(1. - depth), 1.) * 0.25 * fakeSSSAmount;
 
@@ -2448,6 +2548,17 @@ void main() {
     vec3 color = image(uv + pixel.xz) + image(uv - pixel.xz) + image(uv + pixel.zy) + image(uv - pixel.zy);
     color *= 0.25;
 #else
+    if(frame - 0.5 > 5456. && frame - 0.5 < 5759.) {
+        uv.x = - uv.x;
+    }
+    if(frame - 0.5 > 6062. && frame - 0.5 < 6365.) {
+        uv.x = - uv.x;
+    }
+
+    if(frame - 0.5 > 6668. && frame - 0.5 < 6972.) {
+        uv.x = - uv.x;
+    }
+
     vec3 color = image(uv);
 #endif
 
