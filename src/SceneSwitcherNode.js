@@ -33,7 +33,7 @@
       let selectedScene;
       if (frame >= 7578) {
         selectedScene = this.inputs.outro;
-      } else if (frame >= 5153) {
+      } else if (frame >= 5115) {
         selectedScene = this.inputs.blender;
       } else if (frame >= 4546) {
         selectedScene = this.inputs.banana;

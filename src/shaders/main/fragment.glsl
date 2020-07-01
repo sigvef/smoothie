@@ -51,6 +51,8 @@ uniform vec2 ninjadevTriangles[NINJADEV_TRIANGLE_COUNT];
 
 #define Z(x) (clamp((x), 0., 1.))
 
+#define FLASH(x) if(frame + 0.5 > x) {flasher = 1. - (smosh(x - 30., frame, 60.) - 0.5) * 2.;}
+
 
 float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2 )
 {
@@ -211,7 +213,28 @@ vec3 skybox(vec3 p) {
     vec3 color = mix(vec3(33., 25., 3.) / 255., vec3(92., 54., 6.) / 255., smosh(0., amount, 1. / 3.));
     color = mix(color, vec3(182., 215., 224.) / 255., smosh(1. / 3., amount, 1. / 3.));
     color = mix(color, vec3(1.), smosh(2. / 3., amount, 1. / 3.));
-    return color;
+
+    vec3 tint = vec3(1.);
+    if(frame - 0.5 > 5115.) {
+    tint = vec3(125., 130., 160.) / 255.;
+    }
+
+    if(frame - 0.5 > 5759.) {
+        tint = vec3(252., 238., 78.) / 255. * 0.9;
+    }
+    if(frame - 0.5 > 6365.) {
+        tint = vec3(.2, .6, .8);
+    }
+    if(frame - 0.5 > 6668.) {
+        tint = vec3(240., 10., 148.) / 255.;
+    }
+    if(frame - 0.5 > 6744.) {
+        tint = vec3(121., 222., 44.) / 255.;
+    }
+    if(frame - 0.5 > 6972.) {
+        tint = vec3(54., 3., 20.) / 255.;
+    }
+    return color * mix(tint, vec3(1.), 0.5);
 }
 
 
@@ -739,6 +762,16 @@ vec4 kiwiTexture(vec3 uv) {
 #ifdef IS_BLENDER
 Hit mapBlender(vec3 p) {
     float rotation = frame * 0.01;
+
+    if(frame > 6724. - 0.5 && frame < 6744. - 0.5) {
+           p.x -= 1.5; 
+           p.y -= .1;
+       if(frame > 6734. - 0.5) {
+           p.x += .75; 
+           p.y += .5;
+       }
+    }
+
     vec3 np = p;
     vec3 xxp = p;
 
@@ -767,7 +800,7 @@ Hit mapBlender(vec3 p) {
     r = mix(1., r, smoothstep(0., 1., smosh(0.1, h, 0.2)));
     r = mix(1.15, r, smoothstep(0., 1., smosh(0.1, h, 0.01)));
     r = mix(0., r, smoothstep(0., 1., smosh(0., h, 0.1)));
-    r = mix(0., r, Z(smosh(0.025, h, 0.01)));
+    r = mix(0.04, r, Z(smosh(0.01, h, 0.01)));
 
 
     r *= 0.3;
@@ -806,8 +839,14 @@ Hit mapBlender(vec3 p) {
         roughness = .7;
         metalness = 0.;
     }
+    float mixa = min(1., smosh(5115., frame, (5153. - 5115.) * 2.) * 2.);
 
-    float d = sdCappedCylinder(p, r, 1.);
+    vec3 speedshake = vec3(
+        sin(frame),
+        0.,
+        sin(frame + 200.)
+    ) * mixa;
+    float d = sdCappedCylinder(p + speedshake * 0.01, r, 1.);
 
     float containerd = d;
 
@@ -819,8 +858,7 @@ Hit mapBlender(vec3 p) {
 
     Hit result = Hit(d, 0., p, p, transform, albedo, roughness, metalness, 0., material);
 
-
-    vec3 displayp = p + vec3(.195, 0.69, -.0);
+    vec3 displayp = p + speedshake * 0.01 + vec3(.195, 0.69, -.0);
     mat4 displaytransform = translate(vec3(0.));
     displaytransform *= rotateX(PI / 2.);
     displaytransform *= rotateZ(PI / 2.);
@@ -829,23 +867,15 @@ Hit mapBlender(vec3 p) {
     float flipper = smosh(0.055, length(displayp.xz), 0.001);
     result = smadd(result, Hit(sdCappedCylinder(displayp, .05, .1) / 0.666 - 0.02, 0., displayp, displayp, displaytransform, mix(vec3(0.5, 0.75, 0.9), vec3(.2), flipper), mix(1., 0.2, flipper), flipper, 0., material), 0.01);
 
-    vec3 knifep = p;
-    knifep += vec3(0., 0.15, 0.);
-    knifep = opTx(knifep, rotateY(+frame * 0.1));
-    knifep = opTx(knifep, rotateZ(-sign(knifep.x) * PI * 0.25));
-    knifep = opTx(knifep, rotateX(PI / 2.));
-    float knifed = sdBox(knifep, vec3(.15, 0.03, 0.002));
-    result = add(result, Hit(knifed, 0., p, p, transform, vec3(0.5), 0.1, 1., 0., M_METAL));
-
-
     float smooshbase = smosh(5153., frame, (7578. - 5153.) / 2.);
     float smoosher = smooshbase * 1. / 3. + 1. / 3.;
     Hit food = Hit(9999., 0., p, p, transform, vec3(0.), 0.2, 0., 0., M_BG);
+    float fr = max(0., frame - 5153.) + mixa * 10.;
     for(int i = 0; i < 7; i++) {
         vec3 fp = p;
-        p.y -= 0.2 * length(p.xz) - smooshbase * 0.03;
-        fp = opTx(fp, rotateY(frame * 0.02 + frame * (2. - p.y) * 0.001 + PI * 2. / 7. * float(i)));
-        fp = opTx(fp, rotateZ(2. * PI * 2. / 7. * float(i) + frame * 0.1));
+        p.y -= (0.2 * length(p.xz) - smooshbase * 0.03) * mixa;
+        fp = opTx(fp, rotateY((fr * 0.02 + fr * (2. - p.y) * 0.001 + PI * 2. / 7. * float(i))));
+        fp = opTx(fp, rotateZ((2. * PI * 2. / 7. * float(i) + fr * 0.1)));
         fp = fp + vec3(0.25, 0., 0.);
         vec3 albedo = vec3(1.);
         if(i == 0) {
@@ -871,7 +901,7 @@ Hit mapBlender(vec3 p) {
             albedo = vec3(251., 228., 174.) / 255.;
         }
         albedo = mix(albedo, SMOOTHIE_COLOR, smooshbase);
-        food = smadd(food, Hit(sdSphere(fp, .1), 0., p, p, transform, albedo, 0.2, 0., 0., M_BG), smoosher);
+        food = smadd(food, Hit(sdSphere(fp, .1), 0., p, p, transform, albedo, 0.2, 0., 0., M_BG), smoosher * mixa);
     }
     food = smadd(food, Hit(sdSphere(p + vec3(0., 0.4, 0.), .2), 0., p, p, transform, SMOOTHIE_COLOR, 0.2, 0., 0., M_BG), 1.);
     food.distance = max(food.distance, containerd + 0.01);
@@ -893,8 +923,21 @@ Hit mapBlender(vec3 p) {
     if(frame - 0.5 > 6365.) {
         bg = vec3(.2, .6, .8);
     }
+    if(frame - 0.5 > 6668.) {
+        bg = vec3(240., 10., 148.) / 255. * 0.9;
+    }
+    if(frame - 0.5 > 6744.) {
+        bg = vec3(121., 222., 44.) / 255.;
+    }
+    if(frame - 0.5 > 6972.) {
+        bg = vec3(54., 3., 20.) / 255. * 2.;
+    }
 
     float snare7 = pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. * 7. + 6., 14.) / 7.), 2.) * 2.;
+
+    if(frame < 6668.) {
+        snare7 += 10. * smosh(6650., frame, 6668. - 6650.);
+    }
 
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 8.8), vec3(.5 + 0.05 * snare7, 10., 1.)) - 0.01, 0., xxp, xxp, translate(vec3(0.)), bg * 1.0 + 0.2 + 0.1 * snare7, 1., 0., 0., M_BG));
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(1., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg * 1.1, 1., 0., 0., M_BG));
@@ -2037,7 +2080,7 @@ vec3 image(vec2 uv) {
     vec3 cameraPosition = vec3(0., 0., -12.);
     vec3 rayDirection = normalize(vec3(uv, 4. - 0.2 * snare));
 
-    if(frame > 5153. - 0.5 && frame < 7578. - 0.5) {
+    if(frame > 5115. - 0.5 && frame < 7578. - 0.5) {
         cameraPosition = vec3(mix(-1., .6, smosh(5153., frame, 6365. - 5153.)), 3., -10.);
         if(frame < 6365. - 0.5) {
             rayDirection = opTx(rayDirection, rotateZ(0.1 - (frame - 5153.) * 0.00018));
@@ -2054,9 +2097,10 @@ vec3 image(vec2 uv) {
     }
     cameraPosition.z += snare;
 
-    if(frame >  5153. - 0.5) {
+    if(frame >  5115. - 0.5) {
         float shakespeed = 0.05 + snare7 * 0.01;
         float shakeamount = snare7 * 0.005 + 0.003 * smosh(5153., frame, 6365. - 5153.);
+        shakeamount *= 1. - smosh(7578., frame, 0.);
         float noiz = snoise(vec3(frame * shakespeed, 0., 0.)) - 0.5;
         float noiz2 = snoise(vec3(frame * shakespeed, 10., 10.)) - 0.5;
         float noiz3 = snoise(vec3(frame * shakespeed, 50., 50.)) - 0.5;
@@ -2548,19 +2592,34 @@ void main() {
     vec3 color = image(uv + pixel.xz) + image(uv - pixel.xz) + image(uv + pixel.zy) + image(uv - pixel.zy);
     color *= 0.25;
 #else
-    if(frame - 0.5 > 5456. && frame - 0.5 < 5759.) {
+    if(frame + 0.5 > 5456. && frame - 0.5 < 5759.) {
         uv.x = - uv.x;
     }
-    if(frame - 0.5 > 6062. && frame - 0.5 < 6365.) {
+    if(frame + 0.5 > 6062. && frame - 0.5 < 6365.) {
         uv.x = - uv.x;
     }
 
-    if(frame - 0.5 > 6668. && frame - 0.5 < 6972.) {
+    if(frame + 0.5 > 6668. && frame - 0.5 < 6972.) {
         uv.x = - uv.x;
     }
 
     vec3 color = image(uv);
 #endif
+
+    float flasher = 0.;
+    FLASH(5115.);
+    FLASH(5456.);
+    FLASH(5759.);
+    FLASH(6062.);
+    FLASH(6365.);
+    FLASH(6668.);
+
+    FLASH(6744.);
+
+    FLASH(6972.);
+    FLASH(7578.);
+
+    color = mix(color, skybox(normalize(vec3(0.1, 1., 0.1))), flasher);
 
     color *= smosh(378. - 200., frame, 200.);
 
