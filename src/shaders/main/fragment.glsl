@@ -1,11 +1,13 @@
 #pragma optimize(off)
 
-#define NINJADEV_TRIANGLE_COUNT (42 * 3)
+#define TRIANGLE_COUNT_NIN (42 * 3)
+#define TRIANGLE_COUNT_NINJA (42 * 3)
+#define TRIANGLE_COUNT_NINJADEV (42 * 3)
 
 uniform float frame;
 uniform float resolutionX;
 uniform float resolutionY;
-uniform vec2 ninjadevTriangles[NINJADEV_TRIANGLE_COUNT];
+uniform vec2 ninjadevTriangles[TRIANGLE_COUNT_NINJADEV];
 
 
 #define EPSILON 0.0001
@@ -232,7 +234,7 @@ vec3 skybox(vec3 p) {
         tint = vec3(121., 222., 44.) / 255.;
     }
     if(frame - 0.5 > 6972.) {
-        tint = vec3(54., 3., 20.) / 255.;
+        tint = vec3(1.);
     }
     return color * mix(tint, vec3(1.), 0.5);
 }
@@ -930,7 +932,7 @@ Hit mapBlender(vec3 p) {
         bg = vec3(121., 222., 44.) / 255.;
     }
     if(frame - 0.5 > 6972.) {
-        bg = vec3(54., 3., 20.) / 255. * 2.;
+        bg = vec3(.8);
     }
 
     float snare7 = pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. * 7. + 6., 14.) / 7.), 2.) * 2.;
@@ -1476,6 +1478,8 @@ Hit mapOutro(vec3 p) {
     vec3 kp = p;
     mat4 transform = translate(vec3(0.));
 
+    float lifter = smosh(7578., frame, 160.);
+
     p += vec3(-.4, -1.1, -2.);
     float scale = 12.;
 
@@ -1493,9 +1497,22 @@ Hit mapOutro(vec3 p) {
 
     p += vec3(0., -5., 0.);
 
+    int ninkiller = 0;
 
-    for(int i = 0; i < NINJADEV_TRIANGLE_COUNT; i += 3) {
-        d = min(d, sdTriangle(vec2(p.x, -p.y), ninjadevTriangles[i], ninjadevTriangles[i + 1], ninjadevTriangles[i + 2]));
+    if(frame > 7805. - 0.5) {
+        ninkiller = 48;
+    } else if(frame > 7754. - 0.5) {
+        ninkiller = 22;
+    } else if(frame > 7730.5) {
+        ninkiller = 14;
+    }
+
+
+    if(ninkiller > 0) {
+        for(int i = 0; i < TRIANGLE_COUNT_NINJADEV; i += 3) {
+            float nk = 0.00001 + 0.99999 * (1. - step(float(ninkiller * 3), float(i)));
+            d = min(d, sdTriangle(vec2(p.x, -p.y), nk * ninjadevTriangles[i], nk * ninjadevTriangles[i + 1], nk * ninjadevTriangles[i + 2]));
+        }
     }
 
     float h = 2.;
@@ -1509,6 +1526,9 @@ Hit mapOutro(vec3 p) {
     Hit result = Hit(d, 0., xxp, (p / scale - vec3(1., -3.5, 0.)) * .25, transform, vec3(1.), 1., 0., 0., M_KIWI);
 
     xxp += vec3(0.9, -.15, 2.);
+
+    xxp.y += (1. - lifter * 0.95) * 2.5;
+    kp.y += (1. - lifter * 0.95) * 2.5;
 
     float r = 0.3 + xxp.y * 0.1;
     float outr = r + 0. * abs(sin(xxp.y * 22.)) * 0.001;
@@ -2193,7 +2213,7 @@ vec3 image(vec2 uv) {
     } else if(CHECK_MATERIAL(hit.material, M_WOOD)) {
         bubbleAmount = 0.;
         fakeSSSAmount = .1; 
-        vec3 uv = hit.uv * vec3(20., .3, .3);
+        vec3 uv = hit.uv * vec3(40., .3, .3) * 2.;
         float noiz = pow(snoise(uv), 4.);
         hit.albedo = mix(vec3(237., 192., 133.) / 255., vec3(134., 89., 27.) / 255., noiz);
         hit.roughness = 0.3 + noiz * 0.5;
@@ -2216,7 +2236,7 @@ vec3 image(vec2 uv) {
             c = kiwiTexture(newHit.uv).rgb;
         }
 #endif
-        hit.albedo += (1. - hit.roughness) * 0.5 * newHit.albedo / l * c;
+        hit.albedo += (1. - hit.roughness) * 0.3 * newHit.albedo / l * c;
 #endif 
 #ifdef USE_GLASS
     } else if(CHECK_MATERIAL(hit.material, M_GLASS)) {
