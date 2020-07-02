@@ -1677,41 +1677,41 @@ Hit mapKiwi(vec3 p) {
 
 Hit map(vec3 p, float isShadowMap) {
 
-    if(frame > 7578. - 0.5) {
+    if(false) {
 #ifdef IS_OUTRO
+    } else if(frame > 7578. - 0.5) {
     return mapOutro(p);
 #endif
-} else if(frame > 5110. - 0.5) {
 #ifdef IS_BLENDER
+} else if(frame > 5110. - 0.5) {
         return mapBlender(p);
 #endif
-} else if(frame > 5001. - 0.5) {
 #ifdef IS_BANANA
 } else if(frame > 4546. - 0.5) {
     return mapBanana(p);
 #endif
-} else if(frame > 3940. - 0.5) {
 #ifdef IS_MANDARIN
+} else if(frame > 3940. - 0.5) {
     return mapMandarin(p, isShadowMap);
 #endif
-} else if(frame > 3334. - 0.5) {
 #ifdef IS_STRAWBERRY
+} else if(frame > 3334. - 0.5) {
     return mapStrawberry(p);
 #endif
-} else if(frame > 2727. - 0.5) {
 #ifdef IS_RASPBERRY
+} else if(frame > 2727. - 0.5) {
     return mapRaspberry(p);
 #endif
-} else if(frame > 2121. - 0.5) {
 #ifdef IS_GRAPE
+} else if(frame > 2121. - 0.5) {
     return mapGrape(p);
 #endif
 #ifdef IS_PEACH
 } else if(frame > 1515. - 0.5) {
     return mapPeach(p);
 #endif
-} else if(frame > 908. - 0.5) {
 #ifdef IS_KIWI
+} else if(frame > 908. - 0.5) {
     return mapKiwi(p);
 #endif
 #ifdef IS_INTRO
@@ -2055,6 +2055,7 @@ vec3 image(vec2 uv) {
     } else if(frame > 2727. - 0.5) {
         bg = vec3(92., 17., 52.) / 255. * mix(1.1, 1.5, smosh(1. / 3. * (1. - smosh(3296., frame, 3315. - 3296.)), abs(uv.y), 0.001));
     }
+
     
 
     float splitIndex = 0.;
@@ -2619,7 +2620,7 @@ vec3 image(vec2 uv) {
 
     float safer = 0.9;
 
-    float shadowK = mix(32., 32., smosh(7578., frame, 0.01));
+    float shadowK = 32.;
 
     float shade = softshadow(hit.position, light2Direction, .1, 10., shadowK, safer);
 
@@ -2637,6 +2638,7 @@ vec3 image(vec2 uv) {
     color = color * (1. - ambient) + ambient * hit.albedo;
 
     color = mix(bg, color, 1. - Z((hit.distance - 40.) / 10.));
+
 
     return color;
 
