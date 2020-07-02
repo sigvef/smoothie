@@ -217,23 +217,23 @@ vec3 skybox(vec3 p) {
     color = mix(color, vec3(1.), smosh(2. / 3., amount, 1. / 3.));
 
     vec3 tint = vec3(1.);
-    if(frame - 0.5 > 5115.) {
+    if(frame - 0.5 > 5115. - 0.5) {
     tint = vec3(125., 130., 160.) / 255.;
     }
 
-    if(frame - 0.5 > 5759.) {
+    if(frame > 5759. - 0.5) {
         tint = vec3(252., 238., 78.) / 255. * 0.9;
     }
-    if(frame - 0.5 > 6365.) {
+    if(frame > 6365. - 0.5) {
         tint = vec3(.2, .6, .8);
     }
-    if(frame - 0.5 > 6668.) {
+    if(frame > 6668. - 0.5) {
         tint = vec3(240., 10., 148.) / 255.;
     }
-    if(frame - 0.5 > 6744.) {
+    if(frame > 6744. - 0.5) {
         tint = vec3(121., 222., 44.) / 255.;
     }
-    if(frame - 0.5 > 6972.) {
+    if(frame > 6972. - 0.5) {
         tint = vec3(1.);
     }
     return color * mix(tint, vec3(1.), 0.5);
@@ -774,6 +774,8 @@ Hit mapBlender(vec3 p) {
        }
     }
 
+    p.y += 3. * smosh(7426., frame, 7578. - 7426.);
+
     vec3 np = p;
     vec3 xxp = p;
 
@@ -911,7 +913,7 @@ Hit mapBlender(vec3 p) {
 
     vec3 wp = xxp;
 
-    xxp = opTx(xxp, rotateZ(PI * 2. + PI / 2. * smosh(6365. - 15., frame, 30.) * (1. - 2. * smosh(6365., frame, 0.))));
+    xxp = opTx(xxp, rotateZ(PI * 2. + PI / 4. * smosh(6365. - 15., frame, 30.) * (1. - 2. * smosh(6365., frame, 0.)) + PI / 4. * smosh(6668., frame, 0.) - PI / 2. * smosh(6744., frame, 0.)));
 
     xxp.x += frame * 0.02 + 10. * smooshbase + frame * 0.04 * smosh(6365., frame, 0.);
     xxp.y += 0.2;
@@ -2101,7 +2103,7 @@ vec3 image(vec2 uv) {
     vec3 rayDirection = normalize(vec3(uv, 4. - 0.2 * snare));
 
     if(frame > 5115. - 0.5 && frame < 7578. - 0.5) {
-        cameraPosition = vec3(mix(-1., .6, smosh(5153., frame, 6365. - 5153.)), 3., -10.);
+        cameraPosition = vec3(mix(-1., .6, smosh(5153., frame, 6365. - 5153.)), 3.1, -10.);
         if(frame < 6365. - 0.5) {
             rayDirection = opTx(rayDirection, rotateZ(0.1 - (frame - 5153.) * 0.00018));
         }
@@ -2623,6 +2625,11 @@ void main() {
         uv.x = - uv.x;
     }
 
+    if(frame > 6365. - 0.5 && frame < 6668. - 0.5) {
+        uv.x = -abs(uv.x);
+        uv.x += 0.15 * sin(frame * 0.02);
+    }
+
     vec3 color = image(uv);
 #endif
 
@@ -2642,6 +2649,8 @@ void main() {
     color = mix(color, skybox(normalize(vec3(0.1, 1., 0.1))), flasher);
 
     color *= smosh(378. - 200., frame, 200.);
+
+    color *= 1. - smosh(8249. - 200., frame, 200.);
 
     gl_FragColor = vec4(color, 1.);
 
