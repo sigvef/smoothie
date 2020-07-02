@@ -3,6 +3,7 @@
     constructor(id) {
       super(id, {
         inputs: {
+          intro: new NIN.TextureInput(),
           kiwi: new NIN.TextureInput(),
           peach: new NIN.TextureInput(),
           grapes: new NIN.TextureInput(),
@@ -20,6 +21,7 @@
     }
 
     beforeUpdate(frame) {
+      this.inputs.intro.enabled = false;
       this.inputs.kiwi.enabled = false;
       this.inputs.peach.enabled = false;
       this.inputs.grapes.enabled = false;
@@ -50,7 +52,7 @@
       } else if (frame >= 908) {
         selectedScene = this.inputs.kiwi;
       } else {
-        selectedScene = this.inputs.kiwi;
+        selectedScene = this.inputs.intro;
       }
 
       selectedScene.enabled = true;

@@ -18,7 +18,16 @@
       "mandarin": "mandarin.render",
       "banana": "banana.render",
       "blender": "blender.render",
-      "outro": "outro.render"
+      "outro": "outro.render",
+      "intro": "intro.render"
+    }
+  },
+  {
+    "id": "intro",
+    "type": "mainNode",
+    "options": {
+      "shader": "main",
+      "fragmentPreamble": "#define IS_INTRO\n\n"
     }
   },
   {

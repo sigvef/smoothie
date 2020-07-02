@@ -22,12 +22,13 @@ uniform vec2 ninjadevTriangles[TRIANGLE_COUNT_NINJADEV];
 #define USE_WOOD
 #define IS_KIWI
 #endif
+#ifdef IS_INTRO
+#define USE_GLASS
+#define USE_WOOD
+#endif
 
 
 #define SMOOTHIE_COLOR (vec3(207., 99., 185.) / 255.)
-
-/* turn on or off 4xAA */
-//#define AA
 
 #define M_BG 0.
 
@@ -48,12 +49,22 @@ uniform vec2 ninjadevTriangles[TRIANGLE_COUNT_NINJADEV];
 #define M_METAL 16.
 #define M_STRAW 17.
 #define M_WOOD 18.
+#define M_BLENDER_DISPLAY 19.
 
 #define CHECK_MATERIAL(x, material) (((x) > (material - .5)) && ((x) < (material + .5)))
 
 #define Z(x) (clamp((x), 0., 1.))
 
 #define FLASH(x) if(frame + 0.5 > x) {flasher = 1. - (smosh(x - 30., frame, 60.) - 0.5) * 2.;}
+
+float sdEquilateralTriangle( vec2 p ) {
+    const float k = sqrt(3.0);
+    p.x = abs(p.x) - 1.0;
+    p.y = p.y + 1.0/k;
+    if( p.x+k*p.y>0.0 ) p = vec2(p.x-k*p.y,-k*p.x-p.y)/2.0;
+    p.x -= clamp( p.x, -2.0, 0.0 );
+    return -length(p)*sign(p.y);
+}
 
 
 float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2 )
@@ -421,6 +432,7 @@ Hit smadd(Hit a, Hit b, float k) {
     a.metalness = mix(a.metalness, b.metalness, t);
     a.emissive = mix(a.emissive, b.emissive, t);                   
     a.material = mix(a.material, b.material, t);
+    a.uv = mix(a.uv, b.uv, t);
 
     return a;
 }
@@ -462,24 +474,6 @@ vec3 calculateLightPosition() {
 float repeat(float x, float r) {
     return mod(x + r * 0.5, r) - r * 0.5;
 }
-
-
-float CubicInterpolate(
-        float y0,float y1,
-        float y2,float y3,
-        float mu)
-{
-    float a0,a1,a2,a3,mu2;
-
-    mu2 = mu*mu;
-    a0 = -0.5*y0 + 1.5*y1 - 1.5*y2 + 0.5*y3;
-    a1 = y0 - 2.5*y1 + 2.*y2 - 0.5*y3;
-    a2 = -0.5*y0 + 0.5*y2;
-    a3 = y1;
-
-    return(a0*mu*mu2+a1*mu2+a2*mu+a3);
-}
-
 
 float sdPentagon( vec2 p, float r ) {
     const vec3 k = vec3(0.809016994,0.587785252,0.726542528);
@@ -569,6 +563,7 @@ float sdWedge(vec3 p) {
     return d;
 }
 
+#ifdef IS_KIWI
 Hit kiwihalf(vec3 p, mat4 transform, float t, float slicer) {
 
     p = opTx(p, transform);
@@ -622,6 +617,7 @@ Hit kiwihalf(vec3 p, mat4 transform, float t, float slicer) {
     result.distance -= 0.005 * sin(p.x * 20.) * cos(p.x * 12.) * sin(p.y * 15.);
     return result;
 }
+#endif
 
 
 float sdMandarinPeel(vec3 p, float amount) {
@@ -657,6 +653,50 @@ vec3 opRepLim(vec3 p, float c, vec3 l)
     vec3 q = p-c*clamp(floor(p/c + 0.5),-l,l);
     return q;
 }
+
+#ifdef IS_BLENDER
+MaterialProperties blenderDisplayTexture(vec3 uv) {
+    uv += vec3(0., .73, 0.);
+    float bump = 0.5;
+    float roughness = 0.5;
+
+    vec3 color = vec3(1., 1., 0.98);
+
+    float len = length(uv.yz * 100.);
+    float angle = atan(uv.y, uv.z);
+
+    float chits = (1. - smosh(PI - PI / 8., angle, 0.01)) * smosh(PI / 8., angle, 0.01) * smosh(0.7, sin(angle * 32.), 0.01) * smosh(6.5, len, 0.01) *
+        (1. - smosh(8., len, 0.01));
+
+    color = mix(color, vec3(0., 0., 0.), chits);
+
+    vec3 red = vec3(1., 0., 0.);
+
+    float arrowd = len - 1.;
+
+    vec3 ruv = uv;
+
+    float rotater = abs(sin(frame * 10.) * sin(frame * 0.1));
+    ruv = opTx(ruv, rotateX(PI / 3. - 0.25 * rotater));
+
+
+    arrowd = min(arrowd, sdBox(ruv +vec3(0., -.025, 0.), vec3(100., .025, .004)));
+    vec2 arrowp = ruv.yz + vec2(-4., 0.) / 80.;
+    arrowp = opTx(vec3(arrowp, 0.), rotateZ(PI / 2.)).xy;
+    arrowd = min(arrowd, sdEquilateralTriangle(arrowp * 80.));
+
+    color = mix(red, color, smosh(0., arrowd, 0.001));
+
+    color = mix(vec3(0.), color, smosh(0., len - 0.25, 0.01));
+
+    float noiz = snoise(uv * 100.);
+
+    color *= 1. - noiz * 0.05;
+    roughness += noiz * 0.1;
+
+   return MaterialProperties(color, roughness, bump);
+}
+#endif
 
 #ifdef IS_KIWI
 vec4 kiwiTexture(vec3 uv) {
@@ -854,6 +894,18 @@ Hit mapBlender(vec3 p) {
 
     float containerd = d;
 
+
+    vec3 hp = p + speedshake * 0.01 + vec3(0., -.45, -.43);
+    float angleh = atan(hp.z, hp.x) + PI;
+    float handled = sdCappedCylinder(hp, 0.01 + max(0., sin(angleh)) * 0.005 * sin(p.y * 80.), 0.17);
+    vec3 handlep = opTx(hp + vec3(0., -.2, .1), rotateX(PI / 2.));
+    handled = smin(handled, sdCappedCylinder(handlep, 0.005, 0.1), 0.05);
+    handlep = opTx(handlep + vec3(0., 0., 0.4), rotateX(0.4));
+    handled = smin(handled, sdCappedCylinder(handlep, 0.005, 0.1), 0.05);
+    handled -= 0.03;
+
+    d = smin(handled, d, 0.1);
+
     d = abs(d) - 0.005;
     d *= 0.5;
 
@@ -869,7 +921,7 @@ Hit mapBlender(vec3 p) {
     displayp = opTx(displayp, displaytransform);
     displayp.x *= 0.666;
     float flipper = smosh(0.055, length(displayp.xz), 0.001);
-    result = smadd(result, Hit(sdCappedCylinder(displayp, .05, .1) / 0.666 - 0.02, 0., displayp, displayp, displaytransform, mix(vec3(0.5, 0.75, 0.9), vec3(.2), flipper), mix(1., 0.2, flipper), flipper, 0., material), 0.01);
+    result = smadd(result, Hit(sdCappedCylinder(displayp, .05, .1) / 0.666 - 0.02, 0., displayp, p + speedshake * 0.01, displaytransform, mix(vec3(0.5, 0.75, 0.9), vec3(.2), flipper), mix(1., 0.2, flipper), flipper, 0., mix(M_BLENDER, M_BLENDER_DISPLAY, 1. - flipper)), 0.01);
 
     float smooshbase = smosh(5153., frame, (7578. - 5153.) / 2.);
     float smoosher = smooshbase * 1. / 3. + 1. / 3.;
@@ -952,8 +1004,7 @@ Hit mapBlender(vec3 p) {
 }
 #endif
 
-
-
+#ifdef IS_RASPBERRY
 Hit mapRaspberry(vec3 p) {
     vec3 xxp = p;
     mat4 transform = translate(vec3(0.));
@@ -1009,7 +1060,7 @@ Hit mapRaspberry(vec3 p) {
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 9.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
     return result;
 }
-
+#endif
 
 #ifdef IS_STRAWBERRY
 Hit mapStrawberry(vec3 p) {
@@ -1104,7 +1155,6 @@ Hit mapStrawberry(vec3 p) {
     return result;
 }
 #endif
-
 
 #ifdef IS_MANDARIN
 Hit mapMandarin(vec3 p, float isShadowMap) {
@@ -1345,7 +1395,8 @@ Hit mapBanana(vec3 p) {
 }
 #endif
 
-Hit mapGrapeHalf(vec3 p, mat4 transform, float cutRotation, float amount) {
+#ifdef IS_GRAPE
+Hit mapGrapeHalf(vec3 p, mat4 transform, float cutRotation, float amount, float cuts) {
     float d = sdSphere(p, 1.); 
     vec3 cutp = p;
     //vec3 cutp = opTx(p, rotateY(cutRotation));
@@ -1356,9 +1407,10 @@ Hit mapGrapeHalf(vec3 p, mat4 transform, float cutRotation, float amount) {
     float r = (0.5 + (1. + floor(1.2 + p.z * 4.)) * 0.1) * 0.1;
     result = smadd(result, Hit(sdRoundedCylinder(topP, r, .05, .15), 0., p, p, transform, vec3(157., 148., 81.) / 255., 1., 0., .5, M_BG), 0.1);
 
-    result.distance = opSmoothSubtraction(sdBox(cutp - vec3(2.02, 0., 0.), amount * vec3(2.)), result.distance, 0.03);
+    result.distance = opSmoothSubtraction(sdBox(cutp - vec3(2.02, 2.02 * (1. - Z(cuts)), 0.), amount * vec3(2.)), result.distance, 0.03);
     return result;
 }
+#endif
 
 #ifdef IS_GRAPE
 Hit mapGrape(vec3 p) {
@@ -1401,7 +1453,7 @@ Hit mapGrape(vec3 p) {
     dropP.z *= 0.9;
 
     float cutRotation = t * 10. + offset * 4.;
-    Hit result = mapGrapeHalf(p, transform, cutRotation, cutT);
+    Hit result = mapGrapeHalf(p, transform, cutRotation, cutT, offset);
 
     //result = add(result, mapGrapeHalf(dropP, transform, cutRotation, -1.));
 
@@ -1422,57 +1474,25 @@ Hit mapGrape(vec3 p) {
 #endif
 
 
-Hit mapGlass(vec3 p) {
+#ifdef IS_INTRO
+Hit mapIntro(vec3 p) {
 
-    p = opTx(p, rotateX(sin(frame * 0.1) * 0.1 + PI / 8.));
-
-    float d = sdSphere(p, 1.);
-
-    d = max(d, -sdSphere(p, 0.95));
-
-    d = opSmoothSubtraction(sdBox(p - vec3(0., 2., 0.), vec3(2.)), d, 0.02);
-    
+    vec3 bgp = p;
+    vec3 xxp = p;
+    vec3 bg = vec3(110., 85., 55.) / 255. * 1.1;
     mat4 transform = translate(vec3(0.));
-    Hit result = Hit(d, 0., p, p, transform, vec3(1.), 0., 0., 0., M_GLASS);
 
-    vec3 bg = vec3(223., 245., 191.) / 255.;
+    vec3 bg2 = vec3(226., 250., 192.) / 255. * 0.8;
 
-    result = add(result, Hit(
-        sdBox(p + vec3(0., 0., -10.), vec3(10., 10., 1.)),
-        0., p, p, transform, bg, 0., 0., 0., M_BG));
+    float transition = smosh(871. - 3., frame, 908. - 871. - 3.);
 
-    result = add(result, Hit(
-        sdBox(p + vec3(0., 0., 13.), vec3(10., 10., 1.)),
-        0., p, p, transform, bg, 0., 0., 0., M_BG));
+    Hit result = Hit(sdBox(bgp + vec3(0., 0., -9.), vec3(100., 100., 1.)), 0., bgp, bgp, transform, bg, 1., 0., 0., M_BG);
+    result = add(result, Hit(sdBox(xxp - vec3(0., 0., 7.), vec3(mix(-.1, 1.4, transition), 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
 
-    result = add(result, Hit(
-        sdBox(p + vec3(10., 0., 0.), vec3(1., 10., 10.)),
-        0., p, p, transform, bg, 0., 0., 0., M_BG));
 
-    result = add(result, Hit(
-        sdBox(p + vec3(-10., 0., 0.), vec3(1., 10., 10.)),
-        0., p, p, transform, bg, 0., 0., 0., M_BG));
-
-    result = add(result, Hit(
-        sdBox(p + vec3(0., -10., 0.), vec3(10., 1., 10.)),
-        0., p, p, transform, bg, 0., 0., 0., M_BG));
-
-    result = add(result, Hit(
-        sdBox(p + vec3(0., 10., 0.), vec3(10., 1., 10.)),
-        0., p, p, transform, bg, 0., 0., 0., M_BG));
-
-    vec3 strawP = p + vec3(-0.2, 0.2, 0.);
-    strawP = opTx(strawP, rotateZ(3. * PI / 8.));
-    result = add(result, Hit(
-        max(sdCappedCylinder(strawP, .045, 1.),
-            -sdCappedCylinder(strawP, .04, 2.)),
-        0., p, p, transform, bg, 0., 0., 0., M_BG));
-
-    result = add(result, Hit(
-        opSmoothSubtraction(sdBox(p - vec3(0., 1.7 + sin(p.x * 2. + frame * 0.1) * 0.1, 0.), vec3(2.)), sdSphere(p, .95), 0.1),
-        0., p, p, transform, vec3(1., .6, 1.), .2, 0., 0., M_LIQUID_SMOOTHIE));
     return result;
 }
+#endif
 
 #ifdef IS_OUTRO
 Hit mapOutro(vec3 p) {
@@ -1572,7 +1592,11 @@ Hit mapOutro(vec3 p) {
     kiwid /= sqs;
     result = add(result, Hit(kiwid, 0., kp, kp, kt, vec3(1.), 0., 0., 0., M_KIWI));
 
+    vec3 bgp = opRepLim(xxp + vec3(frame * 0.005, 0., 0.), 2., vec3(1000., 0., 0.));
+
     result = add(result, Hit(sdBox(xxp - vec3(0., 0., 12.), vec3(10., 10., 1.)), 0., xxp, xxp, translate(vec3(0.)), bg2, 1., 0., 0., M_BG));
+    result = add(result, Hit(sdBox(bgp + vec3(0., 0., -11.9) - 0.1, vec3(.15, 100., 1.)), 0., bgp, bgp, transform, bg * 0.9, 1., 0., 0., M_BG));
+
     result = add(result, Hit(sdCappedCylinder(xxp + vec3(0., 10.51, 0.), 1.2, 10.) - 0.01, 0., xxp, xxp, translate(vec3(0.)), bg, .1, 0., .0, M_WOOD));
     return result;
 }
@@ -1690,8 +1714,10 @@ Hit map(vec3 p, float isShadowMap) {
 #ifdef IS_KIWI
     return mapKiwi(p);
 #endif
+#ifdef IS_INTRO
 } else {
-    return mapGlass(p);
+    return mapIntro(p);
+#endif
 }
 }
 
@@ -2095,7 +2121,7 @@ vec3 image(vec2 uv) {
 
 
 
-    float snare = (1. - smosh(5153., frame, 0.)) * pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. + 1., 2.)), 2.) * 2.;
+    float snare = smosh(908., frame, 0.) * (1. - smosh(5153., frame, 0.)) * pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. + 1., 2.)), 2.) * 2.;
 
     float snare7 = smosh(6365., frame, 0.) * pow(max(0., 1. - mod(frame * 190. / 60. / 60. / 2. * 7. + 6., 14.) / 7.), 2.) * 2.;
 
@@ -2129,6 +2155,15 @@ vec3 image(vec2 uv) {
         rayDirection = opTx(rayDirection, rotateX(noiz * shakeamount));
         rayDirection = opTx(rayDirection, rotateY(noiz2 * shakeamount));
         rayDirection = opTx(rayDirection, rotateZ(noiz3 * shakeamount));
+    }
+
+    if(frame > 5911. - 0.5 && frame < 6029. - 0.5) {
+        cameraPosition = vec3(0., .65, -2.);
+    }
+
+    if(frame > 6214. - 0.5 && frame < 6338. - 0.5) {
+        float t = mix(2.6, 1.9, (frame - 6214.) / (6338. - 6214.));
+        cameraPosition = vec3(0., t, -3.5);
     }
 
 
@@ -2332,6 +2367,14 @@ vec3 image(vec2 uv) {
 
         hit.albedo = albedo;
         fakeSSSAmount = 1.;
+#endif
+
+#ifdef IS_BLENDER
+    } else if(CHECK_MATERIAL(hit.material, M_BLENDER_DISPLAY)) {
+        MaterialProperties mp = blenderDisplayTexture(hit.uv);
+        vec3 reflected = reflect(rayDirection, normal);
+        hit.albedo = mix(mp.albedo + skybox(reflected), vec3(1.), 0.25);
+        hit.roughness = mp.roughness;
 #endif
 
 #ifdef IS_BLENDER
@@ -2610,10 +2653,6 @@ void main() {
 
     vec3 pixel = vec3(1. / iResolution.xy / 4., 0.);
 
-#ifdef AA
-    vec3 color = image(uv + pixel.xz) + image(uv - pixel.xz) + image(uv + pixel.zy) + image(uv - pixel.zy);
-    color *= 0.25;
-#else
     if(frame + 0.5 > 5456. && frame - 0.5 < 5759.) {
         uv.x = - uv.x;
     }
@@ -2631,20 +2670,27 @@ void main() {
     }
 
     vec3 color = image(uv);
-#endif
 
     float flasher = 0.;
+
+#ifdef IS_KIWI
+    FLASH(908.);
+    flasher *= 0.1;
+#endif
+
+    #ifdef IS_BLENDER
     FLASH(5115.);
     FLASH(5456.);
     FLASH(5759.);
     FLASH(6062.);
     FLASH(6365.);
     FLASH(6668.);
-
     FLASH(6744.);
-
     FLASH(6972.);
+#endif
+#ifdef IS_OUTRO
     FLASH(7578.);
+#endif
 
     color = mix(color, skybox(normalize(vec3(0.1, 1., 0.1))), flasher);
 
