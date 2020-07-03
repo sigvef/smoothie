@@ -1402,10 +1402,13 @@ Hit mapGrapeHalf(vec3 p, mat4 transform, float cutRotation, float amount, float 
     //vec3 cutp = opTx(p, rotateY(cutRotation));
     Hit result = Hit(d, 0., p, p, transform, vec3(1.), 1., 0., 0., M_GRAPE);
 
+
     p += vec3(0., 0., 1.);
     vec3 topP = opTx(p, rotateX(PI / 2.));
     float r = (0.5 + (1. + floor(1.2 + p.z * 4.)) * 0.1) * 0.1;
-    result = smadd(result, Hit(sdRoundedCylinder(topP, r, .05, .15), 0., p, p, transform, vec3(157., 148., 81.) / 255., 1., 0., .5, M_BG), 0.1);
+    r *= 1. + 0.01 * snoise(topP * 40.);
+    r *= 1. - topP.y;
+    result = smadd(result, Hit(sdRoundedCylinder(topP, r, .05, .25), 0., p, p, transform, 0.8 * vec3(157., 148., 81.) / 255., 0.5 + 0.5 *snoise(topP * 20.), 0., .5, M_BG), 0.1);
 
     result.distance = opSmoothSubtraction(sdBox(cutp - vec3(2.02, 2.02 * (1. - Z(cuts)), 0.), amount * vec3(2.)), result.distance, 0.03);
     return result;
@@ -1862,6 +1865,8 @@ MaterialProperties bananaTexture(vec3 uv) {
 
     float angle = atan(uv.y, uv.x);
 
+    color = mix(color, color * 1. + 0.15* smosh(0.1, pow(sin(len * 50.) * sin(angle * 32. + len * 10.), 2.), .1), (1. - smosh(1.71, len, 0.1)) * smosh(1.65, len, 0.01));
+
     vec2 res = voronoi3(uv * 4., 1.);
 
     float insideMixer = 0.5 + 0.5 * sin(angle * 3.) + 0.15 * sin(angle * 16.);
@@ -1888,6 +1893,7 @@ MaterialProperties bananaTexture(vec3 uv) {
     float stripes = max(pow(noiz, 0.25), 0.6);
 
     float edgeBump =  pow(0.1 * snoise(uv * vec3(16., 16., 1024.)) + max(stripes, 0.6 + 0.05 * sin(uv.z * 800.)), 2.) + 0.25 * smosh(0.61, stripes, 0.1);
+
     color += 0.05 * smosh(0.61, stripes, 0.01) * bananaEdgeMixture * (1. - skinMixer);
 
     color = mix(color, vec3(1.), 0.2 * bananaEdgeMixture);
@@ -1895,11 +1901,16 @@ MaterialProperties bananaTexture(vec3 uv) {
     float peelMixer = smosh(0.34, uv.z, 0.00001) * (1. - smosh(.73, uv.z, 0.00001));
 
     bump = mix(2. * bump, edgeBump * len / 2., peelMixer * bananaEdgeMixture);
+
+    float skinNoise = snoise(uv * 90.);
+    bump = mix(bump, 0.05 * skinNoise, 1. - bananaEdgeMixture);
+
     //bump = mix(bump, insideMixer, 0.5);
 
     //bump = 0.5 + bump * 0.1;
 
     roughness = mix(0.3, 0.9, skinMixer);
+    roughness *= 1. - bump - skinNoise * 0.2;
 
     return MaterialProperties(color, roughness, bump);
 }
@@ -2002,16 +2013,15 @@ MaterialProperties grapeTexture(vec3 uv) {
 
     vec3 color = mix(baseColor, lightColor, amount);
 
-    float lines = 1. - pow(sin(1000. + ringlen * 40. * len), 8.) * (1. - len) * 0.15;
+    float lines = 1. - 0.5 * pow(sin(1000. + ringlen * 40. * len), 8.) * (1. - len) * 0.15;
 
     color *= lines;
 
 
-    float skinColorAmount = smosh(0.99, len, 0.01);
+    float skinColorAmount = smosh(0.98, len, 0.01);
     float noiz = snoise(uv * 2. * vec3(40., 1., 1.));
     float skinColorModulator = (0.8 + 0.2 * noiz) * (0.5 + 0.5 * sin(2. + uv.z * 2.));
     vec3 skinColor = mix(lightGrapeSkin, darkGrapeSkin, skinColorModulator);
-
     float noiz2 = snoise(uv * 5.);
 
 
@@ -2026,7 +2036,7 @@ MaterialProperties grapeTexture(vec3 uv) {
 
 
 
-    return MaterialProperties(color, mix(0.5, 0.4 * skinColorModulator + 0.1 + 0.5 *noiz2 * noiz, smosh(0.9, len, 0.1)), 0.5 - amount * 0.2 + seeds + lines * 0.1);
+    return MaterialProperties(color, Z(mix(0.5, 0.4 * skinColorModulator + 0.1 + 1.5 *noiz2 * noiz, smosh(0.9, len, 0.1))), 0.5 - amount * 0.2 + seeds + lines * 0.1);
 }
 #endif
 
@@ -2500,8 +2510,7 @@ vec3 image(vec2 uv) {
         bump = mp.bump;
         bubbleAmount = 4.;
         bubbleScale = .5 + .2 * (sin(hit.uv.y * 2.321) + 0.4 * sin(hit.uv.z * 5.234));
-        bubbleScale *= 0.5;
-        fakeSSSAmount = .5;
+        fakeSSSAmount = 0.9;
         bumpNormal = -vec3(
                 grapeTexture(hit.uv + eX).bump - grapeTexture(hit.uv - eX).bump,
                 grapeTexture(hit.uv + eY).bump - grapeTexture(hit.uv - eY).bump,
@@ -2579,8 +2588,9 @@ vec3 image(vec2 uv) {
                 translucency += grapeTexture(newHit.uv + uvDirection * i).albedo / 100.;
             }
             translucency = pow(translucency, vec3(4.));
-            hit.albedo = mix(hit.albedo, translucency, 0.75);
-            hit.albedo += 0.3 * skybox(reflected).rgb + height * 0.2;
+            hit.albedo *= translucency;
+            hit.albedo += 0.2 * skybox(reflected).rgb + height * 0.2;
+            hit.albedo = mix(hit.albedo, vec3(1.), 0.25);
 #endif
 #ifdef IS_BANANA
         } else if(CHECK_MATERIAL(hit.material, M_BANANA)) {
@@ -2602,7 +2612,7 @@ vec3 image(vec2 uv) {
 
 #ifdef IS_GRAPE
     if(CHECK_MATERIAL(hit.material, M_GRAPE)) {
-        hit.albedo = mix(hit.albedo, grapeTexture(backside.uv).albedo, vec3(0.3));
+        hit.albedo = mix(hit.albedo, grapeTexture(backside.uv).albedo, vec3(0.4));
     }
 #endif
 
