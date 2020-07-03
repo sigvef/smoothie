@@ -1,4 +1,5 @@
 #pragma optimize(off)
+precision highp float;
 
 #define TRIANGLE_COUNT_NIN (42 * 3)
 #define TRIANGLE_COUNT_NINJA (42 * 3)
@@ -168,8 +169,7 @@ float opSmoothSubtraction( float d1, float d2, float k ) {
             // Mix final noise value
             vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
             m = m * m;
-            return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
-                        dot(p2,x2), dot(p3,x3) ) );
+            return Z(42. * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) ));
         }
 
 
@@ -1722,19 +1722,6 @@ Hit map(vec3 p, float isShadowMap) {
 }
 
 
-
-
-vec3 leafTexture(vec2 p) {
-    float d = length(p.xy - vec2(0., 2.25));
-
-    vec3 leafAlbedo = vec3(137., 163., 42.) / 255.;
-
-    d = 0.1 * pow(sin((abs(p.x) - p.y + 0.005 * sin(abs(p.x) * 50. + p.x *11.321 + p.y * 3.23)) * 30.), 16.);
-    d += 0.1 *(sin(p.x *.321) + cos(p.y *5.32) * sin(cos(p.y) * sin(p.x * 43.2)));
-    return leafAlbedo + d;
-}
-
-
 Hit march(vec3 rayOrigin, vec3 rayDirection, float side) {
     float distance = 0.;
     float maxDistance = 50.;
@@ -1957,11 +1944,15 @@ MaterialProperties strawberryTexture(vec3 uv) {
     vec3 color = vec3(222., 71., 65.) / 255.;
 
 
-    float fuzz = sin(73.42 * sin(uv.x * 23.341) * uv.x) * cos(uv.y *23.123) * cos(sin(uv.z *321.234)) * 0.1;
+    float fuzz = snoise(uv * 100.) * 0.3;
 
     float ringlen = length(uv.zx);
 
+
     ringlen -= 0.2 * (0.5 + 0.5 * sin(1. + uv.y * 3.));
+
+    ringlen = abs(ringlen);
+
 
     float amount = pow((0.5 + 0.5 * abs(sin(ringlen * 10.))), 4.) * (1. - max(0., pow(ringlen, .5)));
 
@@ -1970,6 +1961,7 @@ MaterialProperties strawberryTexture(vec3 uv) {
     float m = 0.1 + snoise(uv * 0.5) * (snoise(uv * 8.) / 2. + snoise(uv * 16.) / 3. + snoise(uv * 32.) / 4. + snoise(uv * 64.) / 5.);
 
     color = mix(color, vec3(1.), amount * 0.5 + m);
+
 
     color = pow(color, vec3(2.));
 
@@ -1998,7 +1990,6 @@ MaterialProperties grapeTexture(vec3 uv) {
 
     float angle = atan(uv.y, uv.x);
 
-
     float amount = 0.5 + 0.5 * pow(sin(ringlen * 16. * (pow(len, 2.) - .42)), 8.);
 
     amount *= 1. - smosh(0.9, len, 0.09);
@@ -2006,14 +1997,14 @@ MaterialProperties grapeTexture(vec3 uv) {
     float seeds = Z(pow(max(amount * (1. - smosh(0.5, len , 0.1)) - 0.5, 0.), 4.) * 8.);
 
     seeds *= max(0., sin(PI / 2. + angle * 4.) * sin(PI / 2. * 3. + angle * 2.));
+
     amount *= 0.5;
+
     vec3 color = mix(baseColor, lightColor, amount);
 
-    float lines = 1. - pow(sin(1000. + ringlen * 40. * len), 16.) * (1. - len) * 0.15;
+    float lines = 1. - pow(sin(1000. + ringlen * 40. * len), 8.) * (1. - len) * 0.15;
 
     color *= lines;
-
-
 
 
     float skinColorAmount = smosh(0.99, len, 0.01);
@@ -2506,12 +2497,11 @@ vec3 image(vec2 uv) {
         MaterialProperties mp = grapeTexture(hit.uv);
         hit.albedo =  mp.albedo;
         hit.roughness = mp.roughness;
+        bump = mp.bump;
         bubbleAmount = 4.;
         bubbleScale = .5 + .2 * (sin(hit.uv.y * 2.321) + 0.4 * sin(hit.uv.z * 5.234));
         bubbleScale *= 0.5;
         fakeSSSAmount = .5;
-        MaterialProperties center = grapeTexture(hit.uv);
-        bump = center.bump;
         bumpNormal = -vec3(
                 grapeTexture(hit.uv + eX).bump - grapeTexture(hit.uv - eX).bump,
                 grapeTexture(hit.uv + eY).bump - grapeTexture(hit.uv - eY).bump,
