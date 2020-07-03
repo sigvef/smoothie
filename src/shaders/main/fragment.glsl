@@ -5,6 +5,7 @@ precision highp float;
 #define TRIANGLE_COUNT_NINJA (42 * 3)
 #define TRIANGLE_COUNT_NINJADEV (42 * 3)
 
+uniform sampler2D title;
 uniform float frame;
 uniform float resolutionX;
 uniform float resolutionY;
@@ -1403,12 +1404,12 @@ Hit mapGrapeHalf(vec3 p, mat4 transform, float cutRotation, float amount, float 
     Hit result = Hit(d, 0., p, p, transform, vec3(1.), 1., 0., 0., M_GRAPE);
 
 
-    p += vec3(0., 0., 1.);
+    p += vec3(0., 0., 1.05);
     vec3 topP = opTx(p, rotateX(PI / 2.));
     float r = (0.5 + (1. + floor(1.2 + p.z * 4.)) * 0.1) * 0.1;
     r *= 1. + 0.01 * snoise(topP * 40.);
     r *= 1. - topP.y;
-    result = smadd(result, Hit(sdRoundedCylinder(topP, r, .05, .25), 0., p, p, transform, 0.8 * vec3(157., 148., 81.) / 255., 0.5 + 0.5 *snoise(topP * 20.), 0., .5, M_BG), 0.1);
+    result.distance = opSmoothSubtraction(sdRoundedCylinder(topP, r, .05, .01), result.distance, 0.1);
 
     result.distance = opSmoothSubtraction(sdBox(cutp - vec3(2.02, 2.02 * (1. - Z(cuts)), 0.), amount * vec3(2.)), result.distance, 0.03);
     return result;
@@ -2650,6 +2651,8 @@ void main() {
     vec2 iResolution = vec2(resolutionX, resolutionY);
     vec2 uv = gl_FragCoord.xy/iResolution.xy;
 
+    vec2 squareUv = uv;
+
     uv -= 0.5;
 
 
@@ -2675,11 +2678,13 @@ void main() {
 
     float flasher = 0.;
 
+#ifdef IS_INTRO
+    FLASH(302.);
+#endif
 #ifdef IS_KIWI
     FLASH(908.);
     flasher *= 0.1;
 #endif
-
     #ifdef IS_BLENDER
     FLASH(5115.);
     FLASH(5456.);
@@ -2692,6 +2697,53 @@ void main() {
 #endif
 #ifdef IS_OUTRO
     FLASH(7578.);
+#endif
+
+#ifdef IS_INTRO
+    if(frame < 908. - 0.5 && frame > 302. - 0.5) {
+
+        float opacity = 1. - smosh(605., frame, 200.);
+        
+
+        float x = 1. / iResolution.x;
+        float y = 1. / iResolution.y;
+
+        float c = 1. - (squareUv.x + squareUv.y * 9. / 16. / 4.);
+
+        c = mod(c - frame * 0.001, 1.);
+
+        vec3 tint = vec3(1.);
+        if(c > 6. / 7.) {
+            tint = vec3(185., 219., 106.) / 255.;
+        } else if(c > 5. / 7.) {
+            tint = vec3(252., 198., 66.) / 255.;
+        } else if(c > 4. / 7.) {
+            tint = vec3(222., 232., 134.) / 255.;
+        } else if(c > 3. / 7.) {
+            tint = vec3(249., 27., 70.) / 255.;
+        } else if(c > 2. / 7.) {
+            tint = vec3(222., 71., 65.) / 255.;
+        } else if(c > 1. / 7.) {
+            tint = vec3(247., 181., 32.) / 255.;
+        } else {
+            tint = vec3(251., 228., 174.) / 255.;
+        }
+
+        vec3 titleColor =
+            texture2D(title, squareUv).rgb +
+            texture2D(title, squareUv + vec2(x, 0.)).rgb +
+            texture2D(title, squareUv - vec2(x, 0.)).rgb +
+            texture2D(title, squareUv + vec2(0., y)).rgb +
+            texture2D(title, squareUv - vec2(0., y)).rgb +
+            texture2D(title, squareUv + vec2(x, y)).rgb +
+            texture2D(title, squareUv - vec2(x, y)).rgb +
+            texture2D(title, squareUv + vec2(x, -y)).rgb +
+            texture2D(title, squareUv + vec2(-x, y)).rgb;
+        titleColor /= 9.;
+        titleColor = vec3(smosh(0.33333, titleColor.r, 0.33333));
+
+        color = mix(color, tint, (1. - titleColor) * opacity);
+    }
 #endif
 
     color = mix(color, skybox(normalize(vec3(0.1, 1., 0.1))), flasher);

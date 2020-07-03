@@ -4,12 +4,15 @@
       const shader = { ...SHADERS[options.shader] };
       shader.fragmentShader = options.fragmentPreamble + shader.fragmentShader;
       super(id, { ...options, shader });
+
+      this.title = Loader.loadTexture("res/title.png");
     }
 
     update(frame) {
       this.uniforms.frame.value = frame;
       this.uniforms.resolutionX.value = 16 * GU;
       this.uniforms.resolutionY.value = 9 * GU;
+      this.uniforms.title.value = this.title;
 
       this.uniforms.ninjadevTriangles.value = [
         /* N */

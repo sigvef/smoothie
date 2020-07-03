@@ -1,5 +1,6 @@
 {
   "iChannel0": { "type": "t", "value": null },
+  "title": { "type": "t", "value": null },
   "frame": { "type": "f", "value": 0.0 },
   "ninjadevTrianglesCount": { "type": "i", "value": 0.0 },
   "resolutionX": { "type": "f", "value": 1280 },
