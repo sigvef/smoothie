@@ -194,6 +194,47 @@
       this.uniforms.ninjadevTrianglesCount.value =
         this.uniforms.ninjadevTriangles.value.length / 3;
     }
+
+    exportImage() {
+      const img = this.title.image;
+      const c = document.createElement("canvas");
+      const x = c.getContext("2d");
+      c.width = img.width;
+      c.height = img.height;
+      x.translate(c.width / 2, c.height / 2);
+      x.scale(1, -1);
+      x.drawImage(img, -c.width / 2, -c.height / 2);
+      const d = x
+        .getImageData(0, 0, c.width, c.height)
+        .data.filter((x, i) => i % 4 !== 3);
+      const pixels = [];
+      const map = {};
+      [0, 46, 101, 140, 172, 212, 241, 255].map((x, i) => {
+        map[`${x},${x},${x}`] = i;
+      });
+      for (let i = 0; i < d.length; i += 3) {
+        pixels.push(map[d.slice(i, i + 3).join(",")]);
+      }
+
+      const bits = pixels
+        .flatMap((x) => x.toString(2).padStart(3, "0").split(""))
+        .map((x) => +x);
+
+      const packed = [];
+      for (let i = 0; i < bits.length; i += 8) {
+        packed.push(parseInt(bits.slice(i, i + 8).join(""), 2));
+      }
+
+      document.body.appendChild(c);
+
+      const output =
+        "unsigned char packed[] = {" +
+        packed.map((x, i) => x + (i % 16 === 0 ? "\n" : "")) +
+        "};";
+
+      window.magicOutput = output;
+      console.log(output);
+    }
   }
 
   global.mainNode = mainNode;
