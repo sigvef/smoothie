@@ -15,14 +15,184 @@ uniform vec2 ninjadevTriangles[TRIANGLE_COUNT_NINJADEV];
 #define EPSILON 0.0001
 #define PI 3.14159265359
 
+#ifdef IS_INTRO
+#define USE_HIT_ADD
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#endif
+
+#ifdef IS_KIWI
+#define USE_SMOSH
+#define USE_BUBBLE
+#define USE_VORONOI3
+#define USE_OPTX
+#define USE_SDSPHERE
+#define USE_SDBOX
+#define USE_ROTATEY
+#define USE_TRANSLATE
+#define USE_SMOSH
+#define USE_ROTATEZ
+#define USE_ROTATEX
+#define USE_HIT_ADD
+#define USE_SNOISE
+#endif
+
+#ifdef IS_PEACH
+#define USE_BUBBLE
+#define USE_HIT_ADD
+#define USE_OPSMOOTHSUBTRACTION
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDROUNDEDCYLINDER
+#define USE_SDSPHERE
+#define USE_SMADD
+#define USE_SMIN
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#define USE_VORONOI3
+#endif
+
+#ifdef IS_GRAPE
+#define USE_BUBBLE
+#define USE_HIT_ADD
+#define USE_OPREPLIM
+#define USE_OPSMOOTHSUBTRACTION
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDROUNDEDCYLINDER
+#define USE_SDSPHERE
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#define USE_VORONOI3
+#endif
+
+#ifdef IS_RASPBERRY
+#define USE_HIT_ADD
+#define USE_OPREPLIM
+#define USE_OPREVOLUTION
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDHORSESOE
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#define USE_VORONOI3
+#endif
+
+#ifdef IS_STRAWBERRY
+#define USE_VORONOI3
+#define USE_BUBBLE
+#define USE_HASH2
+#define USE_HIT_ADD
+#define USE_OPREPLIM
+#define USE_OPSMOOTHSUBTRACTION
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDSPHERE
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#endif
+
+#ifdef IS_MANDARIN
+#define USE_BUBBLE
+#define USE_HIT_ADD
+#define USE_OPCHEAPBEND
+#define USE_OPSMOOTHINTERSECTION
+#define USE_OPSMOOTHSUBTRACTION
+#define USE_OPTWIST
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDSPHERE
+#define USE_SDTRIPRISM
+#define USE_SDWEDGE
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#define USE_VORONOI3
+#endif
+
+#ifdef IS_BANANA
+#define USE_BUBBLE
+#define USE_HIT_ADD
+#define USE_OPCHEAPBEND
+#define USE_OPSMOOTHSUBTRACTION
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDPENTAGON
+#define USE_SMIN
+#define USE_SMOSH
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#define USE_VORONOI3
+#endif
+
 #ifdef IS_BLENDER
 #define USE_GLASS
+#define USE_HIT_ADD
+#define USE_OPREPLIM
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDCAPPEDCYLINDER
+#define USE_SDEQUILATERALTRIANGLE
+#define USE_SDSPHERE
+#define USE_SMADD
+#define USE_SMIN
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
 #define USE_WOOD
 #endif
 #ifdef IS_OUTRO
+#define USE_BUBBLE
 #define USE_GLASS
-#define USE_WOOD
+#define USE_HIT_ADD
 #define USE_KIWI_RENDERING
+#define USE_OPREPLIM
+#define USE_OPSMOOTHSUBTRACTION
+#define USE_OPTX
+#define USE_ROTATEX
+#define USE_ROTATEY
+#define USE_ROTATEZ
+#define USE_SDBOX
+#define USE_SDCAPPEDCYLINDER
+#define USE_SDSPHERE
+#define USE_SDTRIANGLE
+#define USE_SMOSH
+#define USE_SNOISE
+#define USE_TRANSLATE
+#define USE_VORONOI3
+#define USE_WOOD
 #endif
 #ifdef IS_KIWI
 #define USE_KIWI_RENDERING
@@ -60,6 +230,7 @@ uniform vec2 ninjadevTriangles[TRIANGLE_COUNT_NINJADEV];
 
 #define FLASH(x) if(frame + 0.5 > x) {flasher = 1. - (smosh(x - 30., frame, 60.) - 0.5) * 2.;}
 
+#ifdef USE_SDEQUILATERALTRIANGLE
 float sdEquilateralTriangle( vec2 p ) {
     const float k = sqrt(3.0);
     p.x = abs(p.x) - 1.0;
@@ -68,8 +239,10 @@ float sdEquilateralTriangle( vec2 p ) {
     p.x -= clamp( p.x, -2.0, 0.0 );
     return -length(p)*sign(p.y);
 }
+#endif
 
 
+#ifdef USE_SDTRIANGLE
 float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2 )
 {
     vec2 e0 = p1-p0, e1 = p2-p1, e2 = p0-p2;
@@ -83,8 +256,10 @@ float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2 )
                      vec2(dot(pq2,pq2), s*(v2.x*e2.y-v2.y*e2.x)));
     return -sqrt(d.x)*sign(d.y);
 }
+#endif
 
 
+#ifdef USE_OPTWIST
  vec3 opTwist(vec3 p, float k)
 {
         float c = cos(k*p.y);
@@ -92,17 +267,22 @@ float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2 )
                 mat2  m = mat2(c,-s,s,c);
                     return vec3(m*p.xz,p.y);
 }
+#endif
 
+#ifdef USE_OPSMOOTHSUBTRACTION
 float opSmoothSubtraction( float d1, float d2, float k ) {
     float h = clamp( 0.5 - 0.5*(d2+d1)/k, 0.0, 1.0 );
     return mix( d2, -d1, h ) + k*h*(1.0-h); }
+#endif
 
 
+#ifdef USE_OPSMOOTHINTERSECTION
     float opSmoothIntersection( float d1, float d2, float k ) {
         float h = clamp( 0.5 - 0.5*(d2-d1)/k, 0.0, 1.0 );
         return mix( d2, d1, h ) + k*h*(1.0-h); }
+#endif
 
-
+#ifdef USE_SNOISE
         vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
         vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
 
@@ -173,8 +353,10 @@ float opSmoothSubtraction( float d1, float d2, float k ) {
             m = m * m;
             return clamp(42. * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) ), -1., 1.);
         }
+#endif
 
 
+#ifdef USE_TRANSLATE
 mat4 translate(vec3 p) {
     return mat4(
             vec4(1., 0., 0., p.x),
@@ -182,10 +364,7 @@ mat4 translate(vec3 p) {
             vec4(0., 0., 1., p.z),
             vec4(0., 0., 0., 1.));
 }
-
-vec3 opRepeat(vec3 p, vec3 c) {
-    return mod(p+0.5*c,c)-0.5*c;
-}
+#endif
 
 struct MaterialProperties {
     vec3 albedo;
@@ -206,20 +385,31 @@ struct Hit {
     float material;
 };
 
+#ifdef USE_SDCYLINDER
 float sdCylinder( vec3 p, vec3 c ) {
     return length(p.xz-c.xy)-c.z;
 }
+#endif
 
+#ifdef USE_SDSPHERE
 float sdSphere( vec3 p, float s ) {
     return length(p)-s;
 }
+#endif
 
+#ifdef USE_SMOSH
 float smosh(float edge, float x, float len) {
     return Z(smoothstep(0., 1., (x - edge) / len));   
 }
-vec2 hash( vec2 p ) { p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))); return fract(sin(p)*18.5453); }
+#endif
 
+#ifdef USE_HASH2
+vec2 hash( vec2 p ) { p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))); return fract(sin(p)*18.5453); }
+#endif
+
+#ifdef USE_HASH3
 vec3 hash3( vec3 p ) { return vec3(hash(p.yz), hash(vec2(p.x + 1000., 0.)).x); }
+#endif
 
 
 vec3 skybox(vec3 p) {
@@ -301,11 +491,14 @@ float cookTorranceSpecular(
     return  G * F * D / max(3.14159265 * VdotN * LdotN, 0.000001);
 }
 
+#ifdef USE_OPTX
 vec3 opTx( vec3 p, mat4 m )
 {
     return (vec4(p, 1.) * m).xyz;
 }
+#endif
 
+#ifdef USE_ROTATEX
 mat4 rotateX(float theta) {
     float c = cos(theta);
     float s = sin(theta);
@@ -317,8 +510,10 @@ mat4 rotateX(float theta) {
             vec4(0, 0, 0, 1)
             );
 }
+#endif
 
 
+#ifdef USE_ROTATEY
 mat4 rotateY(float theta) {
     float c = cos(theta);
     float s = sin(theta);
@@ -330,7 +525,9 @@ mat4 rotateY(float theta) {
             vec4(0, 0, 0, 1)
             );
 }
+#endif
 
+#ifdef USE_ROTATEZ
 mat4 rotateZ(float theta) {
     float c = cos(theta);
     float s = sin(theta);
@@ -342,22 +539,28 @@ mat4 rotateZ(float theta) {
             vec4(0, 0, 0, 1)
             );
 }
+#endif
 
 
+#ifdef USE_SDROUNDEDCYLINDER
 float sdRoundedCylinder( vec3 p, float ra, float rb, float h )
 {
     vec2 d = vec2( length(p.xz)-2.0*ra+rb, abs(p.y) - h );
     return min(max(d.x,d.y),0.0) + length(max(d,0.0)) - rb;
 }
+#endif
 
 
+#ifdef USE_SDCAPPEDCYLINDER
 float sdCappedCylinder( vec3 p, float h, float r )
 {
     vec2 d = abs(vec2(length(p.xz),p.y)) - vec2(h,r);
     return min(max(d.x,d.y),0.0) + length(max(d,0.0));
 }
+#endif
 
 
+#ifdef USE_SDROUNDCONE
 float sdRoundCone( vec3 p, float r1, float r2, float h )
 {
     vec2 q = vec2( length(p.xz), p.y );
@@ -371,6 +574,7 @@ float sdRoundCone( vec3 p, float r1, float r2, float h )
 
     return dot(q, vec2(a,b) ) - r1;
 }
+#endif
 
 
 vec3 fancyLighting(Hit hit, vec3 lightDirection, vec3 normal, vec3 rayDirection, float shadow) {
@@ -392,12 +596,16 @@ vec3 fancyLighting(Hit hit, vec3 lightDirection, vec3 normal, vec3 rayDirection,
     return diffuse * (1. - specular) + specular * angle + hit.albedo * hit.emissive;
 }
 
+#ifdef USE_HIT_ADD
 Hit add(Hit a, Hit b) {
     if(a.distance < b.distance) {
         return a;   
     }
     return b;
 }
+#endif
+
+#ifdef USE_HIT_SUB
 Hit sub(Hit b, Hit a) {
     if(-a.distance > b.distance) {
         a.distance = -a.distance;
@@ -405,21 +613,27 @@ Hit sub(Hit b, Hit a) {
     }
     return b;
 }
+#endif
 
+#ifdef USE_HIT_MUL
 Hit mul(Hit a, Hit b) {
     a.distance = max(a.distance, b.distance);
 
 
     return a;
 }
+#endif
 
 
+#ifdef USE_SMIN
 float smin( float a, float b, float k )
 {
     float h = max( k-abs(a-b), 0.0 )/k;
     return min( a, b ) - h*h*h*k*(1.0/6.0);
 }
+#endif
 
+#ifdef USE_SMADD
 Hit smadd(Hit a, Hit b, float k) {
     float m = smin(a.distance, b.distance, k);
 
@@ -438,45 +652,18 @@ Hit smadd(Hit a, Hit b, float k) {
 
     return a;
 }
+#endif
 
-
-float sdEgg(vec2 p, float ra, float rb )
-{
-    const float k = sqrt(3.0);
-    p.x = abs(p.x);
-    float r = ra - rb;
-    return ((p.y<0.0)       ? length(vec2(p.x,  p.y    )) - r :
-            (k*(p.x+r)<p.y) ? length(vec2(p.x,  p.y-k*r)) :
-            length(vec2(p.x+r,p.y    )) - 2.0*r) - rb;
-}
-
-
-
-
-
-float leaf(vec3 p) {
-    float d = sdEgg(p.xy, .2, -1.);
-    float h = .0001;
-    vec2 w = vec2(d, abs(p.z) - h);
-    return min(max(w.x,w.y),0.0) + length(max(w,0.0)) - .005;
-
-}
-
-
+#ifdef USE_SDBOX
 float sdBox( vec3 p, vec3 b )
 {
     vec3 q = abs(p) - b;
     return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
+#endif
 
-vec3 calculateLightPosition() {
-    return vec3(.0, 3., 0.);
-}
 
-float repeat(float x, float r) {
-    return mod(x + r * 0.5, r) - r * 0.5;
-}
-
+#ifdef USE_SDPENTAGON
 float sdPentagon( vec2 p, float r ) {
     const vec3 k = vec3(0.809016994,0.587785252,0.726542528);
     p.x = abs(p.x);
@@ -485,17 +672,10 @@ float sdPentagon( vec2 p, float r ) {
     p -= vec2(clamp(p.x,-r*k.z,r*k.z),r);    
     return length(p)*sign(p.y);
 }
+#endif
 
 
-const mat2 myt = mat2(.12121212, .13131313, -.13131313, .12121212);
-const vec2 mys = vec2(1e4, 1e6);
-
-vec2 rhash(vec2 uv) {
-    uv *= myt;
-    uv *= mys;
-    return fract(fract(uv / mys) * uv);
-}
-
+#ifdef USE_VORONOI3
 vec3 hash(vec3 p) {
     return fract(
             sin(vec3(dot(p, vec3(1.0, 57.0, 113.0)), dot(p, vec3(57.0, 113.0, 1.0)),
@@ -532,19 +712,25 @@ vec2 voronoi3(vec3 x, float scale) {
 
     return res;
 }
+#endif
 
+#ifdef USE_BUBBLE
 float bubble(vec3 x) {
     vec2 res = voronoi3(x, 1.);
     return POW(1. - res.x, 4.);
 }
+#endif
 
 
+#ifdef USE_SDTRIPRISM
 float sdTriPrism( vec3 p, vec2 h )
 {
       vec3 q = abs(p);
         return max(q.z-h.y,max(q.x*0.866025+p.y*0.5,-p.y)-h.x*0.5);
 }
+#endif
 
+#ifdef USE_OPCHEAPBEND
 vec3 opCheapBend(  vec3 p, float k )
 {
     float c = cos(k*p.x);
@@ -553,8 +739,10 @@ vec3 opCheapBend(  vec3 p, float k )
     vec3  q = vec3(m*p.xy,p.z);
     return q;
 }
+#endif
 
 
+#ifdef USE_SDWEDGE
 float sdWedge(vec3 p) {
     p = opCheapBend(p, .25);
     p.xyz = p.zyx;
@@ -564,6 +752,7 @@ float sdWedge(vec3 p) {
     d -= 0.5;
     return d;
 }
+#endif
 
 #ifdef USE_KIWI_RENDERING
 Hit kiwihalf(vec3 p, mat4 transform, float t, float slicer) {
@@ -622,6 +811,7 @@ Hit kiwihalf(vec3 p, mat4 transform, float t, float slicer) {
 #endif
 
 
+#ifdef IS_MANDARIN
 float sdMandarinPeel(vec3 p, float amount) {
     p = opTwist(p, PI * 2.);
 
@@ -632,7 +822,9 @@ float sdMandarinPeel(vec3 p, float amount) {
     d *= 0.25;
     return d;
 }
+#endif
 
+#ifdef USE_SDHORSESOE
 float sdHorseshoe( vec2 p, vec2 c, float r, vec2 w ) {
     p.x = abs(p.x);
     float l = length(p);
@@ -643,18 +835,23 @@ float sdHorseshoe( vec2 p, vec2 c, float r, vec2 w ) {
     p = vec2(p.x,abs(p.y-r))-w;
     return length(max(p,0.0)) + min(0.0,max(p.x,p.y));
 }
+#endif
 
+#ifdef USE_OPREVOLUTION
 vec2 opRevolution(vec3 p, float o) {
     vec2 q = vec2( length(p.xz) - o, p.y );
     return q;
 }
+#endif
 
 
+#ifdef USE_OPREPLIM
 vec3 opRepLim(vec3 p, float c, vec3 l)
 {
     vec3 q = p-c*clamp(floor(p/c + 0.5),-l,l);
     return q;
 }
+#endif
 
 #ifdef IS_BLENDER
 MaterialProperties blenderDisplayTexture(vec3 uv) {
@@ -1731,7 +1928,7 @@ Hit march(vec3 rayOrigin, vec3 rayDirection, float side) {
     float distance = 0.;
     float maxDistance = 50.;
     Hit hit;
-    for(int i = 0; i < 256; i++) {
+    for(int i = 0; i < 128; i++) {
         vec3 position = rayOrigin + rayDirection * distance;
         hit = map(position, 0.);
         hit.distance *= side;
@@ -2238,10 +2435,7 @@ vec3 image(vec2 uv) {
         albedo = vec3(length(hit.position - newHit.position));
 
         float angle = atan(hit.uv.z, hit.uv.x);
-        float whitenesser = smosh(.55 + 0.02 * sin(angle * 2.) + 0.01 * sin(0.3 + angle * 3.), hit.uv.y, 0.02);
-        float whiteness = mix(0.3, 0.2, whitenesser);
-        whiteness += 0.15;
-        vec3 whiteTint = mix(vec3(195., 128., 224.) / 255., vec3(1.), 0.8 + 0.2 * whitenesser);
+        float whiteness = 0.45;
 
         if(CHECK_MATERIAL(newHit.material, M_GLASS)) {
             vec3 norm = calculateNormal(newHit.position) * inside;
@@ -2284,18 +2478,18 @@ vec3 image(vec2 uv) {
                     albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
                 }
 
-                albedo = whiteTint * whiteness + albedo * (1. - whiteness);
+                albedo = whiteness + albedo * (1. - whiteness);
             } else {
                 albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
             }
-            albedo = whiteTint * whiteness + albedo * (1. - whiteness);
+            albedo = whiteness + albedo * (1. - whiteness);
         } else {
             vec3 norm = calculateNormal(newHit.position) * inside;
             albedo = newHit.albedo * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
         }
 
         vec3 norm = calculateNormal(newHit.position) * inside;
-        albedo = whiteTint * whiteness + albedo * (1. - whiteness) * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
+        albedo = whiteness + albedo * (1. - whiteness) * fancyLighting(newHit, light2Direction, norm, -raydir, 1.);
             if(CHECK_MATERIAL(newHit.material, M_LIQUID_SMOOTHIE)) {
                 vec3 reflected2 = reflect(raydir, norm);
                 albedo += 0.1 * skybox(reflected2);
@@ -2364,7 +2558,7 @@ vec3 image(vec2 uv) {
                 raspberryTexture(hit.uv + eX).bump - raspberryTexture(hit.uv - eX).bump,
                 raspberryTexture(hit.uv + eY).bump - raspberryTexture(hit.uv - eY).bump,
                 raspberryTexture(hit.uv + eZ).bump - raspberryTexture(hit.uv - eZ).bump);
-        normal = normalize(normal + bumpNormal * bubbleAmount);
+        normal = normalize(normal + bumpNormal * 0.1);
 #endif
 
 #ifdef IS_PEACH
@@ -2481,6 +2675,7 @@ vec3 image(vec2 uv) {
         hit.albedo += (1. - hit.roughness) * skybox(reflected).rgb;
     }
 
+#ifdef USE_BUBBLE
     /* bubbles */
     if(bubbleAmount > 0.) {
         vec3 q = hit.uv * 7.;
@@ -2539,6 +2734,7 @@ vec3 image(vec2 uv) {
 #endif
         }
     }
+#endif
 
     Hit backside = march(hit.position + rayDirection * backsideRayDirectionStep, backsideSide * rayDirection, -backsideSide);
     float depth = length(backside.position - hit.position);
