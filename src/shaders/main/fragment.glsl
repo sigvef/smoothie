@@ -1704,6 +1704,14 @@ Hit mapOutro(vec3 p) {
 
     float lifter = smosh(7578., frame, 160.);
 
+
+    /*
+    float h = 2.;
+    float d = texture2D(title, vec2(1., -1.) * p.xy * .3).r;
+    vec2 w = vec2( d, abs(p.z) - h );
+    d = min(max(w.x,w.y),0.0) + length(max(w,0.0));
+    d * 0.1;
+
     p += vec3(-.4, -1.1, -2.);
     float scale = 12.;
 
@@ -1732,11 +1740,9 @@ Hit mapOutro(vec3 p) {
     }
 
 
-    if(ninkiller > 0) {
-    for(int i = 0; i < TRIANGLE_COUNT_NINJADEV; i += 3) {
+    for(int i = 0; i < ninkiller; i += 3) {
         float nk = 0.0001 + 0.9999 * (1. - step(float(ninkiller * 3), float(i) + 0.5));
         d = min(d, sdTriangle(vec2(p.x, -p.y), nk * ninjadevTriangles[i], nk * ninjadevTriangles[i + 1], nk * ninjadevTriangles[i + 2]));
-    }
     }
 
     float h = 2.;
@@ -1746,8 +1752,10 @@ Hit mapOutro(vec3 p) {
     d -= 0.08;
 
     d /= scale;
-
     Hit result = Hit(d, 0., xxp, (p / scale - vec3(1., -3.5, 0.)) * .25, transform, vec3(1.), 1., 0., 0., M_KIWI);
+
+    Hit result = Hit(d, 0., xxp, p, transform, vec3(1.), 1., 0., 0., M_KIWI);
+    */
 
     xxp += vec3(0.9, -.15, 2.);
 
@@ -1764,8 +1772,7 @@ Hit mapOutro(vec3 p) {
 
     glassd = opSmoothSubtraction(containerd, glassd, 0.05);
     glassd -= 0.01;
-    Hit glassresult = Hit(glassd, 0., xxp, xxp, transform, vec3(1.), 0., 0., 0., M_GLASS);
-    result = add(glassresult, result);
+    Hit result = Hit(glassd, 0., xxp, xxp, transform, vec3(1.), 0., 0., 0., M_GLASS);
 
     result = add(result, Hit(smoothied, 0., xxp, xxp, transform, SMOOTHIE_COLOR, 0.1, 0., 0.2, M_LIQUID_SMOOTHIE));
 
@@ -2825,6 +2832,39 @@ void main() {
 #endif
 #ifdef IS_OUTRO
     FLASH(7578.);
+
+    float ninkiller = 0.;
+    float len = 4.;
+    ninkiller = mix(ninkiller, 0.7, smosh(7729., frame + len * 2., len * 4.));
+    ninkiller = mix(ninkiller, 0.82, smosh(7754., frame + len, len * 2.));
+    ninkiller = mix(ninkiller, 2., smosh(7805., frame + len * 2., len * 4.));
+    ninkiller -= (frame -  7730.) * 0.0015;
+
+
+    if(squareUv.x > .5 && squareUv.x < ninkiller && squareUv.y > 0.5) {
+
+        vec3 kiwip = vec3(squareUv.x * 16. / 9., squareUv.y, 0.);
+
+        kiwip += vec3(-1.2, -.6, 0.);
+
+        kiwip *= 12.;
+
+        kiwip.y *= 1.2;
+
+        kiwip.xy += frame * 0.02;
+
+        kiwip.x += floor(kiwip.y * .5 + 0.5);
+
+        kiwip = mod(kiwip + 1., vec3(2.)) - 1.;
+
+        kiwip *= 1.2;
+        kiwip.y /= 1.2;
+
+        kiwip.z = 0.1;
+
+        color = mix(color, color * 0.5, (1. - texture2D(title, 2. * squareUv * vec2(1., -1.) - vec2(0.0, .4) - vec2(0.012)).r));
+        color = mix(color, pow(min(0.3 + kiwiTexture(kiwip.yxz).rgb, vec3(1.)), vec3(.5)), 1. - texture2D(title, 2. * squareUv * vec2(1., -1.) - vec2(0.0, .4)).r);
+    }
 #endif
 
 #ifdef IS_INTRO
@@ -2879,6 +2919,8 @@ void main() {
     color *= smosh(378. - 200., frame, 200.);
 
     color *= 1. - smosh(8249. - 200., frame, 200.);
+
+    //color = texture2D(title, squareUv).rgb;
 
     gl_FragColor = vec4(color, 1.);
 

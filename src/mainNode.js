@@ -6,6 +6,14 @@
       super(id, { ...options, shader });
 
       this.title = Loader.loadTexture("res/title.png");
+      this.ninjadev = Loader.loadTexture("res/ninjadev.png");
+
+      this.title.magFilter = THREE.LinearFilter;
+      this.title.minFilter = THREE.LinearFilter;
+      this.ninjadev.magFilter = THREE.LinearFilter;
+      this.ninjadev.minFilter = THREE.LinearFilter;
+      this.ninjadev.wrapS = THREE.RepeatWrapping;
+      this.ninjadev.wrapT = THREE.RepeatWrapping;
     }
 
     update(frame) {
@@ -13,6 +21,10 @@
       this.uniforms.resolutionX.value = 16 * GU;
       this.uniforms.resolutionY.value = 9 * GU;
       this.uniforms.title.value = this.title;
+
+      if (frame >= 7578) {
+        this.uniforms.title.value = this.ninjadev;
+      }
 
       this.uniforms.ninjadevTriangles.value = [
         /* N */
